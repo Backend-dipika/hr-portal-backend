@@ -1,0 +1,8 @@
+type Reward {
+    reward_category_id: ID!
+    user_id: ID!
+    department_id: ID!
+    title: String
+    description: String
+    reward_date: DateTime
+}

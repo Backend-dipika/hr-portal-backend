@@ -1,0 +1,4 @@
+type Designation {
+  id: ID!
+  name: String!
+}

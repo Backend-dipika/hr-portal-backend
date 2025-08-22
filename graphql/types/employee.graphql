@@ -1,0 +1,47 @@
+type Employee {
+    uuid: ID!
+    salutation: String
+    first_name: String! # Required field
+    middle_name: String
+    last_name: String!
+    gender: String
+    employee_id: String!
+    personal_email: String!
+    office_email: String
+    phone_no: String!
+    alt_phone_no: String
+    role_id: Int
+    department_id: Int
+    designation_id: Int
+    date_of_joining: String
+    probation_end_date: String
+    date_of_birth: String
+    marital_status: String
+    about: String
+    current_location: String
+    blood_grp: String
+    specially_abled: Boolean
+    employee_type_id: Int
+    reporting_manager_id: Int
+    reporting_TL_id: Int
+    is_disable: Boolean
+    profile_picture: String
+
+    department: Department # ✅ matches Department type in another schema file
+    designation: Designation # ✅ matches Designation type
+    reward: Reward # ✅ matches Reward type
+}
+
+# type Employee {
+#   first_name: String!# Required field
+#   last_name: String
+#   office_email: String
+#   department_id: Int
+#   designation_id: Int
+#   current_location: String
+#   profile_picture: String
+
+#   department: Department
+#   designation: Designation
+#   reward: Reward
+# }

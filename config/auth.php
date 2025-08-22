@@ -40,6 +40,11 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'api' => [
+            'driver' => 'jwt', //Use the api guard for authentication here.(middleware('auth:api'))
+            'provider' => 'users',
+        ],
+
     ],
 
     /*
