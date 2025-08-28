@@ -1,3 +1,7 @@
+#import department.graphql
+#import designation.graphql
+#import reward.graphql
+
 type Employee {
     uuid: ID!
     salutation: String
@@ -32,16 +36,4 @@ type Employee {
     reward: Reward # ✅ matches Reward type
 }
 
-# type Employee {
-#   first_name: String!# Required field
-#   last_name: String
-#   office_email: String
-#   department_id: Int
-#   designation_id: Int
-#   current_location: String
-#   profile_picture: String
 
-#   department: Department
-#   designation: Designation
-#   reward: Reward
-# }

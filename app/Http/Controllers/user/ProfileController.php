@@ -19,36 +19,18 @@ use Maatwebsite\Excel\Facades\Excel;
 class ProfileController extends Controller
 {
 
-    public function showEmployeeDetails(Request $request)
-    {
-        try {
-            $user = User::with(['designation', 'department','employeeOfMonth'])->get();
-            return response()->json([
-                'users' => $user,
-                'status' => true,
-                'message' => 'Employee details sent successfully',
-            ]);
-        } catch (Exception $e) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Error occurred while sending employee details',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
     public function savePersonalInfo(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'user_id' => 'nullable|exists:users,id',
+            'emp_id' => 'nullable|exists:users,id',
             'salutation' => 'nullable|string',
             'first_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
             'last_name' => 'required|string|max:255',
             'gender' => 'required|string|max:10',
-            'personal_email' => ['required', 'email', 'max:255', Rule::unique('users', 'alt_phone_no')->ignore($request->user_id)],
-            'phone_no' => ['required', 'string', 'regex:/^[0-9]{10,15}$/', Rule::unique('users', 'phone_no')->ignore($request->user_id)],
-            'alt_phone_no' => ['nullable', 'string', 'regex:/^[0-9]{10,15}$/', Rule::unique('users', 'alt_phone_no')->ignore($request->user_id)],
+            'personal_email' => ['required', 'email', 'max:255', Rule::unique('users', 'personal_email')->ignore($request->emp_id)],
+            'phone_no' => ['required', 'string', 'regex:/^[0-9]{10,15}$/', Rule::unique('users', 'phone_no')->ignore($request->emp_id)],
+            'alt_phone_no' => ['nullable', 'string', 'regex:/^[0-9]{10,15}$/', Rule::unique('users', 'alt_phone_no')->ignore($request->emp_id)],
             'date_of_birth' => 'required|date|before:today',
             'marital_status' => 'nullable|string|max:50',
             'blood_grp' => 'nullable|string|max:5',
@@ -62,13 +44,13 @@ class ProfileController extends Controller
             ], 422);
         }
         try {
-            $user = User::where('id', $request->user_id)
+            $user = User::where('id', $request->emp_id)
                 ->where('is_disable', false)
                 ->first();
 
             if ($user) {
                 // Update existing user
-                User::where('id', $request->user_id)->update([
+                User::where('id', $request->emp_id)->update([
                     'salutation' => $request->salutation,
                     'first_name' => $request->first_name,
                     'middle_name' => $request->middle_name ?? null,
@@ -84,7 +66,7 @@ class ProfileController extends Controller
                 ]);
             } else {
                 // Create new user
-                User::create([
+                $user = User::create([
                     'uuid' => Str::uuid(),
                     'salutation' => $request->salutation,
                     'first_name' => $request->first_name,
@@ -106,7 +88,9 @@ class ProfileController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => ' personal info saved successfully',
-            ], 500);
+                'emp_id' => $request->emp_id ?? $user->id
+            ], 200);
+            
         } catch (Exception $e) {
             Log::error('Failed to save personal info', [
                 'message' => $e->getMessage(),
@@ -122,7 +106,7 @@ class ProfileController extends Controller
     public function saveAddress(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'user_id' => 'required|exists:users,id',
+            'emp_id' => 'required|exists:users,id',
             'addresses' => 'required|array',
             'addresses.*.type' => 'required|in:permanent,Current',
             'addresses.*.address1' => 'required|string|max:255',
@@ -150,7 +134,7 @@ class ProfileController extends Controller
             foreach ($addresses as $address) {
                 Address::updateOrCreate(
                     [
-                        'user_id' => $request->user_id,
+                        'user_id' => $request->emp_id,
                         'type'    => $address['type'], // condition: same user + same type
                     ],
                     [
@@ -184,7 +168,7 @@ class ProfileController extends Controller
     public function saveEmploymentDetails(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'user_id' => 'required|exists:users,id',
+            'emp_id' => 'required|exists:users,id',
             'employee_id' => 'required|string|max:255|unique:users,employee_id',
             'office_email' => 'nullable|email|max:255|unique:users,office_email',
             'department_id' => 'required|exists:departments,id',
@@ -201,7 +185,7 @@ class ProfileController extends Controller
             ], 422);
         }
         try {
-            User::where('id', $request->user_id,)->update([
+            User::where('id', $request->emp_id,)->update([
                 'employee_id' => $request->employee_id,
                 'office_email' => $request->office_email,
                 'department_id' => $request->department_id,
@@ -231,7 +215,7 @@ class ProfileController extends Controller
     public function saveDocuments(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'user_id' => 'required|exists:users,id',
+            'emp_id' => 'required|exists:users,id',
             'adhar_card' => 'nullable|file|mimes:pdf,jpeg,png|max:2048',
             'pan_card' => 'nullable|file|mimes:pdf,jpeg,png|max:2048',
             'certificate' => 'nullable|file|mimes:pdf,jpeg,png|max:2048',
@@ -246,7 +230,7 @@ class ProfileController extends Controller
             ], 422);
         }
         try {
-            $path = "user/{$request->user_id}";
+            $path = "user/{$request->emp_id}";
 
             // Handle file uploads if provided
             foreach (['profile_picture', 'adhar_card', 'pan_card', 'certificate', 'experience_letter', 'salary_slip'] as $field) {
@@ -262,7 +246,7 @@ class ProfileController extends Controller
             }
 
             UserDocuments::create(array_merge(
-                ['user_id' => $request->user_id],
+                ['user_id' => $request->emp_id],
                 $filePaths
             ));
         } catch (Exception $e) {

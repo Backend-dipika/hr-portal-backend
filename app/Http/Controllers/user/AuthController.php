@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Facades\JWTFactory;
 
@@ -16,7 +17,7 @@ class AuthController extends Controller
     public function checkAuthenticatedUser(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'phoneNo' => 'required',
+            'mobile' => 'required|digits:10',
         ]);
         if ($validator->fails()) {
             return response()->json([
@@ -25,7 +26,7 @@ class AuthController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
-        $user = User::where('phone_no', $request->phoneNo)
+        $user = User::where('phone_no', $request->mobile)
             ->where('is_disable', false)->first();
         if (!$user) {
             return response()->json(['message' => 'User not authenticated'], 404);
@@ -51,8 +52,8 @@ class AuthController extends Controller
     public function verifyOtp(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'phoneNo' => 'required',
-            'otp' => 'required|digits:4'
+            'mobile' => 'required|digits:10',
+            'otp' => 'required|string|size:4'
         ]);
         if ($validator->fails()) {
             return response()->json([
@@ -61,7 +62,7 @@ class AuthController extends Controller
                 'errors' => $validator->errors()
             ], 422); // 422 Unprocessable Entity
         }
-        $user = User::where('phone_no', $request->phoneNo)
+        $user = User::where('phone_no', $request->mobile)
             ->where('is_disable', false)->first();
         if (!$user) {
             return response()->json(['message' => 'User not found'], 404);
@@ -89,7 +90,7 @@ class AuthController extends Controller
 
         $refreshToken = JWTAuth::encode($refreshPayload)->get();
         Log::info("OTP verified for user: {$user}");
-        return response()->json(['message' => 'Logged in'])
+        return response()->json(['message' => 'Logged in', 'user' => $user], 200)
             ->cookie('access_token', $accessToken, 15, null, null, true, true) // 15 minutes
             ->cookie('refresh_token', $refreshToken, 10080, null, null, true, true); // 7 days
 
@@ -119,7 +120,28 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        return response()->json(['message' => 'User logged in successfully']);
+        try {
+            $token = $request->cookie('access_token');
+            //   JWTAuth::invalidate(JWTAuth::getToken());
+            if ($token) {
+                JWTAuth::setToken($token)->invalidate();
+            }
+            return response()->json(['message' => 'Logged out successfully'], 200)
+                ->cookie('access_token', '', -1)
+                ->cookie('refresh_token', '', -1);
+        } catch (JWTException $e) {
+            return response()->json(['message' => 'Failed to log out'], 500);
+        }
+    }
+
+
+    public function sendUserDetails(Request $request)
+    {
+        $user = $request->user();
+        return response()->json([
+            'id' => $user->id,
+            'role' => $user->role_id
+        ], 200);
     }
 }
 

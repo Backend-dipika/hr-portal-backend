@@ -1,9 +1,7 @@
-# Import other files
-# import types/employee.graphql
-#import types/department.graphql
-#import types/designation.graphql
-#import types/reward.graphql
+#import types/employee.graphql
+
 
 type Query {
-  showEmployeeDetails: [Employee!]! @field(resolver: "App\\GraphQL\\Queries\\Employee@showEmployeeDetails")
+  showEmployeesList: [Employee!]! @field(resolver: "App\\GraphQL\\Queries\\Employee@showEmployeesList")
+  showEmployeeDetails(id: ID!): Employee @field(resolver: "App\\GraphQL\\Queries\\Employee@showEmployeeDetails")
 }

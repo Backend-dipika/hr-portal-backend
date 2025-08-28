@@ -4,6 +4,7 @@ use App\Http\Controllers\user\AuthController;
 use App\Http\Controllers\user\ProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Nuwave\Lighthouse\Http\GraphQLController;
 
 
 Route::get('/user', function (Request $request) {
@@ -14,10 +15,13 @@ Route::get('/user', function (Request $request) {
 Route::prefix('/auth')->group(function () {
     Route::post('/check', [AuthController::class, 'checkAuthenticatedUser']);
     Route::post('/verify', [AuthController::class, 'verifyOtp']);
-    Route::post('/getNewToken', [AuthController::class, 'refreshToken']);
+    Route::post('/getNewToken', [AuthController::class, 'refreshToken'])->middleware('auth:api');
+    Route::post('/logoff', [AuthController::class, 'logout'])->middleware('auth:api');
+    Route::post('/getuserinfo', [AuthController::class, 'sendUserDetails'])->middleware('auth:api');
 });
 
-Route::prefix('/user')->group(function () {
+Route::prefix('/user')->middleware('auth:api')->group(function () {
+    Route::post('/import', [ProfileController::class, 'importExcel']);
     Route::post('/personal-info', [ProfileController::class, 'savePersonalInfo'])->name('user.personalInfo.save');
     Route::post('/address', [ProfileController::class, 'saveAddress'])->name('user.address.save');
     Route::post('/employment-details', [ProfileController::class, 'saveEmploymentDetails'])->name('user.employmentDetails.save');
@@ -25,15 +29,5 @@ Route::prefix('/user')->group(function () {
     Route::get('/show-all-employees', [ProfileController::class, 'showEmployeeDetails']);
 });
 
-Route::post('/import-users', [ProfileController::class, 'importExcel']); 
-
-
-// use Nuwave\Lighthouse\Http\GraphQLController;
-
-// Route::post('/employees', GraphQLController::class)
-//     ->name('graphql.employees');
-
-
-// Route::post('/', [ProfileController::class, 'importExcel']);
 
 

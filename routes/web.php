@@ -16,5 +16,6 @@ Route::get('/protected', function (Request $request) {
     return response()->json(['message' => 'This is a protected Route'], 401);
 })->middleware('auth:api');
 
-Route::post('/import-users', [ProfileController::class, 'importExcel']);
+// Route::post('/import-users', [ProfileController::class, 'importExcel']);
+ Route::post('/import-users', [ProfileController::class, 'importExcel']);
 
