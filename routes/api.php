@@ -34,3 +34,5 @@ Route::prefix('/user')->middleware('auth:api')->group(function () {
 Route::middleware('auth:api')->group(function () {
     Route::put('/profile/{id}', [ProfileController::class, 'update'])->name('profile.update');
 });
+
+//added comment
