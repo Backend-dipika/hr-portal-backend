@@ -5,8 +5,12 @@ namespace App\Http\Controllers\user;
 use App\Http\Controllers\Controller;
 use App\Imports\UsersImport;
 use App\Models\Address;
+use App\Models\Department;
+use App\Models\Designation;
+use App\Models\EmployeeType;
 use App\Models\User;
 use App\Models\UserDocuments;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -16,8 +20,37 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
 
-class ProfileController extends Controller
+class RegistrationController extends Controller
 {
+    public function sendFormOptions()
+    {
+        try {
+            $departments = Department::select('id', 'name')->get();
+            $designations = Designation::select('id', 'name')->get();
+            $employee_types = EmployeeType::select('id', 'name')->get();
+            $reporting_managers = User::select('id', 'first_name', 'last_name')
+                ->where('role_id', 2) //  role_id 2 is for Admin
+                ->where('is_disable', false)
+                ->get();
+
+            return response()->json([
+                'status' => true,
+                'departments' => $departments,
+                'designations' => $designations,
+                'employee_types' => $employee_types,
+                'reporting_managers' => $reporting_managers,
+            ]);
+        } catch (Exception $e) {
+            Log::error('Failed to fetch form options', [
+                'message' => $e->getMessage(),
+            ]);
+            return response()->json([
+                'status' => false,
+                'message' => 'Error occurred while fetching form options',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
     public function savePersonalInfo(Request $request)
     {
@@ -90,7 +123,6 @@ class ProfileController extends Controller
                 'message' => ' personal info saved successfully',
                 'emp_id' => $request->emp_id ?? $user->id
             ], 200);
-            
         } catch (Exception $e) {
             Log::error('Failed to save personal info', [
                 'message' => $e->getMessage(),
@@ -108,7 +140,7 @@ class ProfileController extends Controller
         $validator = Validator::make($request->all(), [
             'emp_id' => 'required|exists:users,id',
             'addresses' => 'required|array',
-            'addresses.*.type' => 'required|in:permanent,Current',
+            'addresses.*.type' => 'required|in:permanent,current',
             'addresses.*.address1' => 'required|string|max:255',
             'addresses.*.address2' => 'nullable|string|max:255',
             'addresses.*.city' => 'required|string|max:100',
@@ -169,13 +201,13 @@ class ProfileController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'emp_id' => 'required|exists:users,id',
-            'employee_id' => 'required|string|max:255|unique:users,employee_id',
-            'office_email' => 'nullable|email|max:255|unique:users,office_email',
+            // 'employee_id' => 'required|string|max:255|unique:users,employee_id',
+            // 'office_email' => 'nullable|email|max:255|unique:users,office_email',
             'department_id' => 'required|exists:departments,id',
             'designation_id' => 'required|exists:designations,id',
             'date_of_joining' => 'required|date',
-            'probation_end_date' => 'required|date|after_or_equal:date_of_joining',
             'employee_type_id' => 'required|exists:employee_types,id',
+            'reporting_manager_id' => 'nullable|exists:users,id',
         ]);
         if ($validator->fails()) {
             return response()->json([
@@ -191,7 +223,7 @@ class ProfileController extends Controller
                 'department_id' => $request->department_id,
                 'designation_id' => $request->designation_id,
                 'date_of_joining' => $request->date_of_joining,
-                'probation_end_date' => $request->probation_end_date,
+                'probation_end_date' => Carbon::parse($request->date_of_joining)->addMonths(3),
                 'employee_type_id' => $request->employee_type_id,
                 'reporting_manager_id' => $request->reporting_manager_id ?? null,
             ]);
@@ -216,11 +248,11 @@ class ProfileController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'emp_id' => 'required|exists:users,id',
-            'adhar_card' => 'nullable|file|mimes:pdf,jpeg,png|max:2048',
-            'pan_card' => 'nullable|file|mimes:pdf,jpeg,png|max:2048',
-            'certificate' => 'nullable|file|mimes:pdf,jpeg,png|max:2048',
-            'experience_letter' => 'nullable|file|mimes:pdf,jpeg,png|max:2048',
-            'salary_slip' => 'nullable|file|mimes:pdf,jpeg,png|max:2048',
+            'adhar_card' => 'nullable|file|mimes:jpeg,png|max:3000',
+            'pan_card' => 'nullable|file|mimes:jpeg,png|max:3000',
+            'certificate' => 'nullable|file|mimes:jpeg,png|max:3000',
+            'experience_letter' => 'nullable|file|mimes:jpeg,png|max:3000',
+            'salary_slip' => 'nullable|file|mimes:jpeg,png,pdf',
         ]);
         if ($validator->fails()) {
             return response()->json([
@@ -230,10 +262,11 @@ class ProfileController extends Controller
             ], 422);
         }
         try {
+
             $path = "user/{$request->emp_id}";
 
             // Handle file uploads if provided
-            foreach (['profile_picture', 'adhar_card', 'pan_card', 'certificate', 'experience_letter', 'salary_slip'] as $field) {
+            foreach (['adhar_card', 'pan_card', 'certificate', 'experience_letter', 'salary_slip'] as $field) {
                 if ($request->hasFile($field)) {
                     $file = $request->file($field);
                     Storage::disk('public')->putFileAs($path, $file, $file->getClientOriginalName());
@@ -249,6 +282,11 @@ class ProfileController extends Controller
                 ['user_id' => $request->emp_id],
                 $filePaths
             ));
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Documnets saved successfully',
+            ], 200);
         } catch (Exception $e) {
             Log::error('Error occurred while saving Address Info', [
                 'message' => $e->getMessage(),

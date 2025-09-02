@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\user\ProfileController;
+
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
@@ -9,7 +9,7 @@ Route::get('/', function () {
 });
 
 Route::get('login', function () {
-    return response()->json(['message' => 'Login'], 200);
+    return response()->json(['message' => 'please LogIn'], 200);
 })->name('login');
 
 Route::get('/protected', function (Request $request) {
@@ -17,5 +17,5 @@ Route::get('/protected', function (Request $request) {
 })->middleware('auth:api');
 
 // Route::post('/import-users', [ProfileController::class, 'importExcel']);
- Route::post('/import-users', [ProfileController::class, 'importExcel']);
+
 

@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Address extends Model
 {
-   
-
     protected $fillable = [
         'uuid',
         'user_id',
@@ -20,4 +18,9 @@ class Address extends Model
         'pincode',
         'country',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id', 'id');
+    }
 }

@@ -1,0 +1,11 @@
+type Address {
+    id: ID!
+    user_id: ID!
+    type: String
+    address1: String
+    address2: String
+    city: String
+    state: String
+    pincode: String
+    country: String
+}

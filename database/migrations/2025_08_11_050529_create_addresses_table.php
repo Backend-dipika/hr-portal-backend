@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('uuid');
             $table->unsignedBigInteger('user_id');
-            $table->enum('type', ['permanent', 'Current']);
+            $table->enum('type', ['permanent', 'current']);
             $table->string('address1')->nullable();
             $table->string('address2');
             $table->string('city');

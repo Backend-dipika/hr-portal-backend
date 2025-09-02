@@ -103,4 +103,21 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->hasMany(Reward::class, 'user_id')->where('reward_category_id', 1);
     }
+    public function address()
+    {
+        return $this->hasMany(Address::class, 'user_id');
+    }
+    public function role()
+    {
+        return $this->belongsTo(Role::class, 'role_id');
+    }
+
+    // public function reportingManager()
+    // {
+    //     return $this->hasOne(User::class, 'reporting_manager_id');
+    // }
+    public function reportingManager()
+    {
+        return $this->belongsTo(User::class, 'reporting_manager_id');
+    }
 }

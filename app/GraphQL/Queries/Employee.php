@@ -27,8 +27,7 @@ final readonly class Employee
     public function showEmployeeDetails($_, array $args)
     {
         try {
-            $user = User::with(['designation', 'department', 'employeeOfMonth'])
-                ->find($args['id']); 
+            $user = User::find($args['id']); 
 
             if (!$user) {
                 throw new Error('Employee not found.');

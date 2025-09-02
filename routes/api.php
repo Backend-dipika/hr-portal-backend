@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\user\AuthController;
-use App\Http\Controllers\user\ProfileController;
+use App\Http\Controllers\user\RegistrationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Nuwave\Lighthouse\Http\GraphQLController;
@@ -21,13 +21,11 @@ Route::prefix('/auth')->group(function () {
 });
 
 Route::prefix('/user')->middleware('auth:api')->group(function () {
-    Route::post('/import', [ProfileController::class, 'importExcel']);
-    Route::post('/personal-info', [ProfileController::class, 'savePersonalInfo'])->name('user.personalInfo.save');
-    Route::post('/address', [ProfileController::class, 'saveAddress'])->name('user.address.save');
-    Route::post('/employment-details', [ProfileController::class, 'saveEmploymentDetails'])->name('user.employmentDetails.save');
-    Route::post('/documents', [ProfileController::class, 'saveDocuments'])->name('user.documents.save');
-    Route::get('/show-all-employees', [ProfileController::class, 'showEmployeeDetails']);
+    Route::get('/form-options', [RegistrationController::class, 'sendFormOptions'])->name('user.form.options');
+    Route::post('/import', [RegistrationController::class, 'importExcel']);
+    Route::post('/personal-info', [RegistrationController::class, 'savePersonalInfo'])->name('user.personalInfo.save');
+    Route::post('/address', [RegistrationController::class, 'saveAddress'])->name('user.address.save');
+    Route::post('/employment-details', [RegistrationController::class, 'saveEmploymentDetails'])->name('user.employmentDetails.save');
+    Route::post('/documents', [RegistrationController::class, 'saveDocuments'])->name('user.documents.save');
+    Route::get('/show-all-employees', [RegistrationController::class, 'showEmployeeDetails']);
 });
-
-
-
