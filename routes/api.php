@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\user\AuthController;
 use App\Http\Controllers\user\RegistrationController;
 use Illuminate\Http\Request;
@@ -28,4 +29,8 @@ Route::prefix('/user')->middleware('auth:api')->group(function () {
     Route::post('/employment-details', [RegistrationController::class, 'saveEmploymentDetails'])->name('user.employmentDetails.save');
     Route::post('/documents', [RegistrationController::class, 'saveDocuments'])->name('user.documents.save');
     Route::get('/show-all-employees', [RegistrationController::class, 'showEmployeeDetails']);
+});
+
+Route::middleware('auth:api')->group(function () {
+    Route::put('/profile/{id}', [ProfileController::class, 'update'])->name('profile.update');
 });
