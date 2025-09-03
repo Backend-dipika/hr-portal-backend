@@ -9,6 +9,7 @@ class Designation extends Model
     protected $fillable = [
         'uuid',
         'name',
+        'department_id',
     ];
 
     public function users()

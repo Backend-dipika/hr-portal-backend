@@ -14,8 +14,11 @@ return new class extends Migration
         Schema::create('designations', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
+            $table->unsignedBigInteger('department_id');
             $table->string('name')->unique();
             $table->timestamps();
+
+            $table->foreign('department_id')->references('id')->on('departments')->onDelete('cascade');
         });
     }
 

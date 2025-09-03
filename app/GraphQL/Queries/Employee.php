@@ -18,7 +18,8 @@ final readonly class Employee
     public function showEmployeesList()
     {
         try {
-            return User::with(['designation', 'department', 'employeeOfMonth'])->get();
+            // return User::with(['designation', 'department', 'employeeOfMonth'])->get();
+            return User::get();
         } catch (Exception $e) {
             return response()->json(['status' => false, 'message' => 'Error occurred while sending employee details', 'error' => $e->getMessage()], 500);
         }
@@ -27,13 +28,12 @@ final readonly class Employee
     public function showEmployeeDetails($_, array $args)
     {
         try {
-            $user = User::find($args['id']); 
+            $user = User::find($args['id']);
 
             if (!$user) {
                 throw new Error('Employee not found.');
             }
             return $user;
-
         } catch (Exception $e) {
             throw new Error('Error retrieving employee details: ' . $e->getMessage());
         }
