@@ -90,33 +90,119 @@ class AuthController extends Controller
 
         $refreshToken = JWTAuth::encode($refreshPayload)->get();
         Log::info("OTP verified for user: {$user}");
+        // return response()->json(['message' => 'Logged in', 'user' => $user], 200)
+        //     ->cookie('access_token', $accessToken, 15, null, null, true, true) // 15 minutes
+        //     ->cookie('refresh_token', $refreshToken, 10080, null, null, true, true); // 7 days
         return response()->json(['message' => 'Logged in', 'user' => $user], 200)
-            ->cookie('access_token', $accessToken, 15, null, null, true, true) // 15 minutes
-            ->cookie('refresh_token', $refreshToken, 10080, null, null, true, true); // 7 days
-
+            ->cookie(
+                'access_token',
+                $accessToken,
+                15,         // expiry in minutes
+                '/',
+                null,
+                true,       // Secure
+                true,       // HttpOnly
+                false,      // Raw
+                'None'      // <-- SameSite=None
+            )
+            ->cookie(
+                'refresh_token',
+                $refreshToken,
+                10080,      // expiry in minutes (7 days)
+                '/',
+                null,
+                true,       // Secure
+                true,       // HttpOnly
+                false,
+                'None'      // <-- SameSite=None
+            );
     }
 
     public function refreshToken(Request $request)
     {
-        $refreshToken = $request->cookie('refresh_token'); // Get refresh token from cookie
+        $refreshToken = $request->cookie('refresh_token');
+
+        if (!$refreshToken) {
+            return response()->json(['error' => 'No refresh token found'], 400);
+        }
 
         try {
-            // Load the refresh token
-            JWTAuth::setToken($refreshToken);
+            // 1. Decode the refresh token
+            $payload = JWTAuth::setToken($refreshToken)->getPayload();
 
-            // Generate a new access token
-            $newAccessToken = JWTAuth::refresh();
+            // 2. Extract user ID from the payload (we stored it in 'sub')
+            $userId = $payload->get('sub');
 
-            // Optional: get the user for any further operations
-            // $user = JWTAuth::setToken($newAccessToken)->toUser();
+            // 3. Fetch user from database
+            $user = User::findOrFail($userId);
 
-            // Return new access token in cookie
-            return response()->json(['message' => 'Token refreshed'])
-                ->cookie('access_token', $newAccessToken, 15, null, null, true, true);
+            // 4. Generate a **new access token**
+            $newAccessToken = JWTAuth::fromUser($user);
+
+            // 5. Generate a **new refresh token** (rotating refresh)
+            $refreshPayload = JWTFactory::customClaims([
+                'sub'  => $user->id,
+                'type' => 'refresh',
+            ])->make([
+                'exp' => now()->addMinutes((int) config('jwt.refresh_ttl'))->timestamp
+            ]);
+
+            $newRefreshToken = JWTAuth::encode($refreshPayload)->get();
+
+            // 6. Send both tokens back in cookies
+            // return response()->json(['message' => 'Token refreshed'])
+            //     ->cookie('access_token', $newAccessToken, 15, '/', null, true, true)  // path '/' for all routes
+            //     ->cookie('refresh_token', $newRefreshToken, 10080, '/', null, true, true);
+            return response()->json(['message' => 'Logged in', 'user' => $user], 200)
+                ->cookie(
+                    'access_token',
+                    $newAccessToken,
+                    15,         // expiry in minutes
+                    '/',
+                    null,
+                    true,       // Secure
+                    true,       // HttpOnly
+                    false,      // Raw
+                    'None'      // <-- SameSite=None
+                )
+                ->cookie(
+                    'refresh_token',
+                    $newRefreshToken,
+                    10080,      // expiry in minutes (7 days)
+                    '/',
+                    null,
+                    true,       // Secure
+                    true,       // HttpOnly
+                    false,
+                    'None'      // <-- SameSite=None
+                );
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Invalid refresh token'], 401);
+            Log::error('Refresh token failed: ' . $e->getMessage());
+            return response()->json(['error' => 'Invalid or expired refresh token'], 401);
         }
     }
+
+    // public function refreshToken(Request $request)
+    // {
+    //     $refreshToken = $request->cookie('refresh_token'); // Get refresh token from cookie
+
+    //     try {
+    //         // Load the refresh token
+    //         JWTAuth::setToken($refreshToken);
+
+    //         // Generate a new access token
+    //         $newAccessToken = JWTAuth::refresh();
+
+    //         // Optional: get the user for any further operations
+    //         // $user = JWTAuth::setToken($newAccessToken)->toUser();
+
+    //         // Return new access token in cookie
+    //         return response()->json(['data' => 'Token refreshed'])
+    //             ->cookie('access_token', $newAccessToken, 15, null, null, true, true);
+    //     } catch (\Exception $e) {
+    //         return response()->json(['error' => 'Invalid refresh token'], 500);
+    //     }
+    // }
 
     public function logout(Request $request)
     {

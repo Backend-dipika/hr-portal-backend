@@ -1,14 +1,31 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\user;
 
+
+use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Address;
+use App\Models\Department;
+use App\Models\Designation;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ProfileController extends Controller
 {
+
+    public function sendRoles()
+    {
+        $roles = Designation::select('id', 'name','department_id')->get();
+        return response()->json(['roles' => $roles], 200);
+    }
+    public function sendDepartments()
+    {
+        $departments = Department::select('id', 'name')->get();
+        return response()->json(['departments' => $departments], 200);
+    }
+
     public function update(Request $request, $id)
     {
         DB::beginTransaction();

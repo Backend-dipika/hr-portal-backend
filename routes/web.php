@@ -9,7 +9,7 @@ Route::get('/', function () {
 });
 
 Route::get('login', function () {
-    return response()->json(['message' => 'please LogIn'], 200);
+    return response()->json(['message' => 'please LogIn'], 401); //401 Unauthorized
 })->name('login');
 
 Route::get('/protected', function (Request $request) {
@@ -17,5 +17,6 @@ Route::get('/protected', function (Request $request) {
 })->middleware('auth:api');
 
 // Route::post('/import-users', [ProfileController::class, 'importExcel']);
+
 
 

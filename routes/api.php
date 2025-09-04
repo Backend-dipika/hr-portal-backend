@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\user\ProfileController;
 use App\Http\Controllers\user\AuthController;
 use App\Http\Controllers\user\RegistrationController;
 use Illuminate\Http\Request;
@@ -16,12 +16,12 @@ Route::get('/user', function (Request $request) {
 Route::prefix('/auth')->group(function () {
     Route::post('/check', [AuthController::class, 'checkAuthenticatedUser']);
     Route::post('/verify', [AuthController::class, 'verifyOtp']);
-    Route::post('/getNewToken', [AuthController::class, 'refreshToken'])->middleware('auth:api');
-    Route::post('/logoff', [AuthController::class, 'logout'])->middleware('auth:api');
+    Route::post('/getNewToken', [AuthController::class, 'refreshToken']);
+    Route::post('/logoff', [AuthController::class, 'logout']);
     Route::post('/getuserinfo', [AuthController::class, 'sendUserDetails'])->middleware('auth:api');
 });
 
-Route::prefix('/user')->middleware('auth:api')->group(function () {
+Route::prefix('/user')->middleware('verify.tokens')->group(function () {
     Route::get('/form-options', [RegistrationController::class, 'sendFormOptions'])->name('user.form.options');
     Route::post('/import', [RegistrationController::class, 'importExcel']);
     Route::post('/personal-info', [RegistrationController::class, 'savePersonalInfo'])->name('user.personalInfo.save');
@@ -31,8 +31,12 @@ Route::prefix('/user')->middleware('auth:api')->group(function () {
     Route::get('/show-all-employees', [RegistrationController::class, 'showEmployeeDetails']);
 });
 
-Route::middleware('auth:api')->group(function () {
+
+
+Route::middleware('verify.tokens')->group(function () {
     Route::put('/profile/{id}', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/get-roles', [ProfileController::class, 'sendRoles']);
+    Route::get('/get-departments', [ProfileController::class, 'sendDepartments']);
 });
 
 //added comment

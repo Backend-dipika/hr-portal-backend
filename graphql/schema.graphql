@@ -5,3 +5,5 @@ type Query {
   showEmployeesList: [Employee!]! @field(resolver: "App\\GraphQL\\Queries\\Employee@showEmployeesList")
   showEmployeeDetails(id: ID!): Employee @field(resolver: "App\\GraphQL\\Queries\\Employee@showEmployeeDetails")
 }
+
+
