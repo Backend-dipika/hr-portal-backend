@@ -18,7 +18,7 @@ Route::prefix('/auth')->group(function () {
     Route::post('/verify', [AuthController::class, 'verifyOtp']);
     Route::post('/getNewToken', [AuthController::class, 'refreshToken']);
     Route::post('/logoff', [AuthController::class, 'logout']);
-    Route::post('/getuserinfo', [AuthController::class, 'sendUserDetails'])->middleware('auth:api');
+    Route::post('/getuserinfo', [AuthController::class, 'sendUserDetails'])->middleware('verify.tokens');
 });
 
 Route::prefix('/user')->middleware('verify.tokens')->group(function () {

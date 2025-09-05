@@ -40,7 +40,8 @@ return new class extends Migration
             $table->unsignedBigInteger('reporting_TL_id')->nullable();
             $table->boolean('is_disable')->default(false);
             $table->string('profile_picture')->nullable();
-            $table->enum('status', ['draft', 'submitted'])->default('draft');
+            $table->date('sepration_date')->nullable();
+            $table->enum('sepration_status', ['active', 'on_notice', 'terminated', 'resigned', 'reversed'])->default('active');
 
 
             $table->rememberToken();

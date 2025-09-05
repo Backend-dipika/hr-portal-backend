@@ -84,46 +84,41 @@ class AuthController extends Controller
         $refreshPayload = JWTFactory::customClaims([
             'sub' => $user->id,
             'type' => 'refresh',
-        ])->make([
             'exp' => now()->addMinutes((int) config('jwt.refresh_ttl'))->timestamp
-        ]);
+        ])->make([]);
 
         $refreshToken = JWTAuth::encode($refreshPayload)->get();
         Log::info("OTP verified for user: {$user}");
-        // return response()->json(['message' => 'Logged in', 'user' => $user], 200)
-        //     ->cookie('access_token', $accessToken, 15, null, null, true, true) // 15 minutes
-        //     ->cookie('refresh_token', $refreshToken, 10080, null, null, true, true); // 7 days
+
+
+        // Decode refresh token to get expiry
+        $decodedRefreshPayload = JWTAuth::setToken($refreshToken)->getPayload();
+        $refreshExp = $decodedRefreshPayload->get('exp');
+
+        // 🔹 Debug logs
+        Log::info('JWT Debug after login', [
+            'user_id'             => $user->id,
+            'refresh_exp_unix'    => $refreshExp,
+            'refresh_exp_human'   => \Carbon\Carbon::createFromTimestamp($refreshExp)->toDateTimeString(),
+            'refresh_token_sample' => $refreshToken // only log sample, avoid full token leak
+        ]);
+
+        Log::info('JWT refresh ttl from config', ['refresh_ttl' => config('jwt.refresh_ttl')]);
+
+
         return response()->json(['message' => 'Logged in', 'user' => $user], 200)
-            ->cookie(
-                'access_token',
-                $accessToken,
-                15,         // expiry in minutes
-                '/',
-                null,
-                true,       // Secure
-                true,       // HttpOnly
-                false,      // Raw
-                'None'      // <-- SameSite=None
-            )
-            ->cookie(
-                'refresh_token',
-                $refreshToken,
-                10080,      // expiry in minutes (7 days)
-                '/',
-                null,
-                true,       // Secure
-                true,       // HttpOnly
-                false,
-                'None'      // <-- SameSite=None
-            );
+            ->cookie('access_token', $accessToken, 15, '/', null, true, true, false,)
+            ->cookie('refresh_token', $refreshToken, 20160, '/', null, true, true, false,);
     }
 
     public function refreshToken(Request $request)
     {
         $refreshToken = $request->cookie('refresh_token');
+        Log::info('Refresh token from frontend', ['refresh token value' => $refreshToken]);
 
         if (!$refreshToken) {
             return response()->json(['error' => 'No refresh token found'], 400);
+            Log::info('No refresh token found from frontend');
         }
 
         try {
@@ -140,42 +135,40 @@ class AuthController extends Controller
             $newAccessToken = JWTAuth::fromUser($user);
 
             // 5. Generate a **new refresh token** (rotating refresh)
+
+            // $refreshPayload = JWTFactory::customClaims([
+            //     'sub'  => $user->id,
+            //     'type' => 'refresh',
+            // ])->make([
+            //     'exp' => now()->addMinutes((int) config('jwt.refresh_ttl'))->timestamp
+            // ]);
             $refreshPayload = JWTFactory::customClaims([
-                'sub'  => $user->id,
+                'sub' => $user->id,
                 'type' => 'refresh',
-            ])->make([
                 'exp' => now()->addMinutes((int) config('jwt.refresh_ttl'))->timestamp
-            ]);
+            ])->make([]);
+
+            Log::info('Refresh token payload', ['refresh token value' => config('jwt.refresh_ttl')]);
 
             $newRefreshToken = JWTAuth::encode($refreshPayload)->get();
 
+
+            // Decode refresh token to get expiry
+            $refreshExp = $payload->get('exp');
+
+            // 🔹 Debug logs
+            Log::info('JWT Debug after login from refresh token', [
+                'user_id'             => $user->id,
+                'refresh_exp_unix'    => $refreshExp,
+                'refresh_exp_human'   => \Carbon\Carbon::createFromTimestamp($refreshExp)->toDateTimeString(),
+                'refresh_token_sample' => $refreshToken // only log sample, avoid full token leak
+            ]);
+
+
             // 6. Send both tokens back in cookies
-            // return response()->json(['message' => 'Token refreshed'])
-            //     ->cookie('access_token', $newAccessToken, 15, '/', null, true, true)  // path '/' for all routes
-            //     ->cookie('refresh_token', $newRefreshToken, 10080, '/', null, true, true);
             return response()->json(['message' => 'Logged in', 'user' => $user], 200)
-                ->cookie(
-                    'access_token',
-                    $newAccessToken,
-                    15,         // expiry in minutes
-                    '/',
-                    null,
-                    true,       // Secure
-                    true,       // HttpOnly
-                    false,      // Raw
-                    'None'      // <-- SameSite=None
-                )
-                ->cookie(
-                    'refresh_token',
-                    $newRefreshToken,
-                    10080,      // expiry in minutes (7 days)
-                    '/',
-                    null,
-                    true,       // Secure
-                    true,       // HttpOnly
-                    false,
-                    'None'      // <-- SameSite=None
-                );
+                ->cookie('access_token', $newAccessToken, 15, '/', null, true, true, false, 'None')
+                ->cookie('refresh_token', $newRefreshToken, 20160, '/', null, true, true, false, 'None');
         } catch (\Exception $e) {
             Log::error('Refresh token failed: ' . $e->getMessage());
             return response()->json(['error' => 'Invalid or expired refresh token'], 401);

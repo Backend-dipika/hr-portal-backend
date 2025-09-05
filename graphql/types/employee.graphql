@@ -32,10 +32,16 @@ type Employee {
     reporting_TL_id: Int
     is_disable: Boolean
     profile_picture: String
+    sepration_date: String
+    sepration_status: String
 
     department: Department # ✅ matches Department type in another schema file
     designation: Designation # ✅ matches Designation type
     reward: Reward # ✅ matches Reward type
     address: [Address]
-    reportingManager: Employee @belongsTo(relation: "reportingManager", foreignKey: "reporting_manager_id")
+    reportingManager: Employee
+        @belongsTo(
+            relation: "reportingManager"
+            foreignKey: "reporting_manager_id"
+        )
 }
