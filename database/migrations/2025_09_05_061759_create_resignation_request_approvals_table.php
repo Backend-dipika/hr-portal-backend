@@ -14,10 +14,9 @@ return new class extends Migration
         Schema::create('resignation_request_approvals', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('resignation_request_id');
-            $table->unsignedBigInteger('approver_id');
-            $table->string('approver_role')->nullable(); 
+            $table->unsignedBigInteger('approver_id')->nullable();
             $table->string('approval_order')->nullable(); //level 1 or 2
-            $table->enum('approval_status', ['pending', 'approved', 'rejected'])->default('pending');
+            $table->enum('approval_status', ['pending','waiting' ,'approved', 'rejected'])->default('pending');
             $table->date('approval_date')->nullable();       
             $table->timestamps();
         });

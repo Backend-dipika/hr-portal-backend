@@ -15,11 +15,12 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('user_id');
             $table->unsignedBigInteger('requested_by_id');
-            $table->enum('status', ['resignation', 'termination'])->default('resignation');
+            $table->enum('type', ['resignation', 'termination'])->default('resignation');
             $table->date('submission_date');
             $table->date('effective_date')->nullable();
-            $table->date('notice_period_end_date ')->nullable();
+            $table->date('notice_period_end_date')->nullable();
             $table->text('reason')->nullable();
+            $table->text('message')->nullable();
             $table->enum('final_status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->string('document')->nullable();
             $table->timestamps();

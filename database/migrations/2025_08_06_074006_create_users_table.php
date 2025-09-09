@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('middle_name')->nullable();
             $table->string('last_name');
             $table->string('gender')->nullable();
-            $table->string('employee_id')->unique()->nullable();
+            $table->string('office_id')->unique()->nullable();
             $table->string('personal_email')->unique();
             $table->string('office_email')->unique()->nullable();
             $table->string('phone_no')->unique();
@@ -41,7 +41,7 @@ return new class extends Migration
             $table->boolean('is_disable')->default(false);
             $table->string('profile_picture')->nullable();
             $table->date('sepration_date')->nullable();
-            $table->enum('sepration_status', ['active', 'on_notice', 'terminated', 'resigned', 'reversed'])->default('active');
+            $table->enum('sepration_status', ['active', 'on_notice', 'inactive', 'reversed','resigned'])->default('active')->nullable();
 
 
             $table->rememberToken();

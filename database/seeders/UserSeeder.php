@@ -26,7 +26,7 @@ class UserSeeder extends Seeder
                     'first_name' => 'Michael',
                     'middle_name' => null,
                     'last_name' => 'Scott',
-                    'employee_id' => 'EMP001',
+                    'office_id' => 'EMP001',
                     'personal_email' => 'michael.personal@example.com',
                     'office_email' => 'michael.scott@company.com',
                     'phone_no' => '9999999901',
@@ -44,6 +44,8 @@ class UserSeeder extends Seeder
                     'employee_type_id' => 1,
                     'reporting_manager_id' => null,
                     'reporting_TL_id' => null,
+                    'sepration_status' => null,    
+                    'probation_end_date' => null,  
                     'remember_token' => Str::random(10),
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -55,7 +57,7 @@ class UserSeeder extends Seeder
                     'first_name' => 'Pamela',
                     'middle_name' => 'Morgan',
                     'last_name' => 'Beesly',
-                    'employee_id' => 'EMP002',
+                    'office_id' => 'EMP002',
                     'personal_email' => 'pamela.personal@example.com',
                     'office_email' => 'pamela.beesly@company.com',
                     'phone_no' => '9999999902',
@@ -73,6 +75,8 @@ class UserSeeder extends Seeder
                     'employee_type_id' => 1,
                     'reporting_manager_id' => null, // Reports to Michael Scott
                     'reporting_TL_id' => null, // Reports to Michael Scott
+                    'sepration_status' => null,    
+                    'probation_end_date' => null,  
                     'remember_token' => Str::random(10),
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -84,7 +88,7 @@ class UserSeeder extends Seeder
                     'first_name' => 'Jim',
                     'middle_name' => null,
                     'last_name' => 'Halpert',
-                    'employee_id' => 'EMP003',
+                    'office_id' => 'EMP003',
                     'personal_email' => 'jim.personal@example.com',
                     'office_email' => 'jim.halpert@company.com',
                     'phone_no' => '9999999903',
@@ -102,7 +106,7 @@ class UserSeeder extends Seeder
                     'employee_type_id' => 1,
                     'reporting_manager_id' => 2, // Reports to Pamela Beesly
                     'reporting_TL_id' => 2, // Reports to Pamela Beesly
-                    'sepration_status' => 'resigned',
+                    'sepration_status' => 'inactive',
                     'probation_end_date' => '2025-12-05',
                     'remember_token' => Str::random(10),
                     'created_at' => now(),
@@ -114,7 +118,7 @@ class UserSeeder extends Seeder
                     'first_name' => 'John',
                     'middle_name' => 'A',
                     'last_name' => 'Doe',
-                    'employee_id' => '001',
+                    'office_id' => '001',
                     'personal_email' => 'john.personal@example.com',
                     'office_email' => 'john.doe@company.com',
                     'phone_no' => '9999999999',
@@ -132,7 +136,8 @@ class UserSeeder extends Seeder
                     'employee_type_id' => 1,
                     'reporting_manager_id' => null,
                     'reporting_TL_id' => null,
-                    'sepration_status' => 'reversed',
+                    'sepration_status' => null,    // ✅ add for all rows
+                    'probation_end_date' => null,  // ✅ add for all rows
                     'remember_token' => Str::random(10),
                     'created_at' => now(),
                     'updated_at' => now(),

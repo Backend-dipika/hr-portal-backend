@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\resignation\ResignationController;
 use App\Http\Controllers\user\ProfileController;
 use App\Http\Controllers\user\AuthController;
 use App\Http\Controllers\user\RegistrationController;
@@ -18,7 +19,7 @@ Route::prefix('/auth')->group(function () {
     Route::post('/verify', [AuthController::class, 'verifyOtp']);
     Route::post('/getNewToken', [AuthController::class, 'refreshToken']);
     Route::post('/logoff', [AuthController::class, 'logout']);
-    Route::post('/getuserinfo', [AuthController::class, 'sendUserDetails'])->middleware('verify.tokens');
+    Route::get('/getuserinfo', [AuthController::class, 'sendUserDetails'])->middleware('verify.tokens');
 });
 
 Route::prefix('/user')->middleware('verify.tokens')->group(function () {
@@ -31,12 +32,16 @@ Route::prefix('/user')->middleware('verify.tokens')->group(function () {
     Route::get('/show-all-employees', [RegistrationController::class, 'showEmployeeDetails']);
 });
 
-
-
 Route::middleware('verify.tokens')->group(function () {
     Route::put('/profile/{id}', [ProfileController::class, 'update'])->name('profile.update');
     Route::get('/get-roles', [ProfileController::class, 'sendRoles']);
     Route::get('/get-departments', [ProfileController::class, 'sendDepartments']);
 });
 
-//added comment
+Route::prefix('/resign')->middleware('verify.tokens')->group(function () {
+    Route::get('/employees', [ResignationController::class, 'showResignedEmployees']);
+    Route::post('/initiate', [ResignationController::class, 'initiateResignation']);
+
+});
+
+

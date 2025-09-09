@@ -11,7 +11,7 @@ type Employee {
     middle_name: String
     last_name: String!
     gender: String
-    employee_id: String!
+    office_id: String!
     personal_email: String!
     office_email: String
     phone_no: String!

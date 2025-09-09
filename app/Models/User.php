@@ -29,7 +29,7 @@ class User extends Authenticatable implements JWTSubject
         'middle_name',
         'last_name',
         'gender',
-        'employee_id',
+        'office_id',
         'personal_email',
         'office_email',
         'phone_no',
@@ -50,6 +50,10 @@ class User extends Authenticatable implements JWTSubject
         'reporting_TL_id',
         'is_disable',
         'profile_picture',
+        'sepration_date',
+        'sepration_status',
+        
+
 
     ];
 

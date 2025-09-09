@@ -201,7 +201,7 @@ class RegistrationController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'emp_id' => 'required|exists:users,id',
-            // 'employee_id' => 'required|string|max:255|unique:users,employee_id',
+            // 'office_id' => 'required|string|max:255|unique:users,office_id',
             // 'office_email' => 'nullable|email|max:255|unique:users,office_email',
             'department_id' => 'required|exists:departments,id',
             'designation_id' => 'required|exists:designations,id',
@@ -218,7 +218,7 @@ class RegistrationController extends Controller
         }
         try {
             User::where('id', $request->emp_id,)->update([
-                'employee_id' => $request->employee_id,
+                'office_id' => $request->office_id,
                 'office_email' => $request->office_email,
                 'department_id' => $request->department_id,
                 'designation_id' => $request->designation_id,
