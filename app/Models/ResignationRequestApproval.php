@@ -13,4 +13,15 @@ class ResignationRequestApproval extends Model
         'approval_status',
         'approval_date',
     ];
+    
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approver_id');
+    }
+   
+
+    // public function resignationRequest()
+    // {
+    //     return $this->belongsTo(ResignationRequest::class, 'resignation_request_id');
+    // }
 }

@@ -52,7 +52,7 @@ class User extends Authenticatable implements JWTSubject
         'profile_picture',
         'sepration_date',
         'sepration_status',
-        
+
 
 
     ];
@@ -122,5 +122,15 @@ class User extends Authenticatable implements JWTSubject
     public function reportingManager()
     {
         return $this->belongsTo(User::class, 'reporting_manager_id');
+    }
+
+    public function resignationRequests()
+    {
+        return $this->hasOne(ResignationRequest::class, 'user_id');
+    }
+
+    public function requestedResignations()
+    {
+        return $this->hasMany(ResignationRequest::class, 'requested_by_id');
     }
 }

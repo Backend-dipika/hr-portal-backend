@@ -41,7 +41,8 @@ Route::middleware('verify.tokens')->group(function () {
 Route::prefix('/resign')->middleware('verify.tokens')->group(function () {
     Route::get('/employees', [ResignationController::class, 'showResignedEmployees']);
     Route::post('/initiate', [ResignationController::class, 'initiateResignation']);
-
+    Route::get('/check', [ResignationController::class, 'checkIfResigned']);
+    Route::post('/cancel', [ResignationController::class, 'cancelResignation']);
 });
-
+ 
 

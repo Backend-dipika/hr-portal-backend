@@ -21,7 +21,7 @@ return new class extends Migration
             $table->date('notice_period_end_date')->nullable();
             $table->text('reason')->nullable();
             $table->text('message')->nullable();
-            $table->enum('final_status', ['pending', 'approved', 'rejected'])->default('pending');
+            $table->enum('final_status', ['pending', 'approved','cancelled'])->default('pending');
             $table->string('document')->nullable();
             $table->timestamps();
 

@@ -6,13 +6,57 @@ use App\Http\Controllers\Controller;
 use App\Models\ResignationRequest;
 use App\Models\ResignationRequestApproval;
 use App\Models\User;
+use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class ResignationController extends Controller
 {
+
+    public function checkIfResigned()
+    {
+        Log::info('checkIfResigned called');
+        try {
+            $user = Auth::user();
+            // $resignation = ResignationRequest::with(['approvals','approver'])->where('user_id', $user->id)->first();
+
+            $resignation = ResignationRequest::with([
+                'approvals' => function ($query) {
+                    $query->select('id', 'resignation_request_id', 'approver_id', 'approval_status', 'approval_date')
+                        ->with(['approver' => function ($subQuery) {
+                            $subQuery->select('id', 'first_name', 'last_name'); // only fetch id & name for approver
+                        }]);
+                }
+            ])
+                ->where('user_id', $user->id)->where('final_status', 'pending')
+                ->select('id', 'user_id', 'type', 'submission_date', 'final_status', 'notice_period_end_date')
+                ->first();
+
+
+            if (!$resignation) {
+                return response()->json([
+                    'status' => true,
+                    'message' => 'No resignation found for the user',
+                    'data' => null
+                ]);
+            }
+            return response()->json([
+                'status' => true,
+                'message' => 'Employee Resigned fetched successfully',
+                'data' => $resignation
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'An error occurred while fetching resigned employees',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
     public function showResignedEmployees()
     {
@@ -39,7 +83,7 @@ class ResignationController extends Controller
             'resigned_on' => 'required|date',
             'reason' => 'required|string',
             'message' => 'nullable|string|max:500',
-            'attachment' => 'nullable|file|',//mimes:pdf,doc,docx|max:2048',
+            'attachment' => 'nullable|file|', //mimes:pdf,doc,docx|max:2048',
         ]);
         if ($validator->fails()) {
             return response()->json([
@@ -56,6 +100,8 @@ class ResignationController extends Controller
                 'requested_by_id' => $request->user_id,
                 'type' => 'resignation',
                 'submission_date' => $request->resigned_on,
+                'effective_date' => $request->resigned_on,
+                'notice_period_end_date' => Carbon::parse($request->resigned_on)->addMonths(1),
                 'reason' => $request->reason,
                 'message' => $request->message,
                 'final_status' => 'pending',
@@ -193,6 +239,44 @@ class ResignationController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'An error occurred while responding to resignation',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function cancelResignation(Request $request)
+    { 
+     Log::info('incomng request', $request->all());
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|exists:users,id',
+            'resignation_id' => 'required|exists:resignation_requests,id',
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+        try {
+            ResignationRequest::where('id', $request->resignation_id)
+                ->where('user_id', $request->user_id)
+                ->update(['final_status' => 'cancelled', 'updated_at' => now()]);
+
+            ResignationRequestApproval::where('resignation_request_id', $request->resignation_id)
+                ->delete();
+
+            User::find($request->user_id)
+                ->update(['sepration_status' => 'active', 'sepration_date' => null]);
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Resignation cancelled successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'An error occurred while cancelling resignation',
                 'error' => $e->getMessage()
             ], 500);
         }

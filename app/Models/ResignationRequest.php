@@ -18,4 +18,14 @@ class ResignationRequest extends Model
         'final_status',
         'document',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function approvals()
+    {
+        return $this->hasMany(ResignationRequestApproval::class, 'resignation_request_id');
+    }
 }
