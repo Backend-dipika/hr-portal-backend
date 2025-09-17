@@ -17,13 +17,11 @@ use Illuminate\Support\Facades\Validator;
 class ResignationController extends Controller
 {
 
-    public function checkIfResigned()
+    public function checkIfResigned() //to show resignation for or related details on frontend
     {
         Log::info('checkIfResigned called');
         try {
             $user = Auth::user();
-            // $resignation = ResignationRequest::with(['approvals','approver'])->where('user_id', $user->id)->first();
-
             $resignation = ResignationRequest::with([
                 'approvals' => function ($query) {
                     $query->select('id', 'resignation_request_id', 'approver_id', 'approval_status', 'approval_date')
@@ -32,7 +30,8 @@ class ResignationController extends Controller
                         }]);
                 }
             ])
-                ->where('user_id', $user->id)->where('final_status', 'pending')
+                ->where('user_id', $user->id)
+                ->whereIn('final_status', ['pending', 'approved'])
                 ->select('id', 'user_id', 'type', 'submission_date', 'final_status', 'notice_period_end_date')
                 ->first();
 
@@ -61,7 +60,25 @@ class ResignationController extends Controller
     public function showResignedEmployees()
     {
         try {
-            $resignation = ResignationRequest::where('approval_status', 'pending')->get();
+            Log::info("show resigned employee called");
+            $resignation = ResignationRequest::with([
+                'user' => function ($query) { //who has resigned
+                    $query->select('id', 'first_name', 'last_name', 'office_email', 'department_id')
+                        ->with(['department:id,name']); // fetch dept name
+                },
+                'approvals' => function ($query) { //how many approval records
+                    $query->select('id', 'resignation_request_id', 'approver_id', 'approval_status', 'approval_order', 'approval_date')
+                        ->with(['approver' => function ($subQuery) { //who will approve
+                            $subQuery->select('id', 'first_name', 'last_name', 'office_email');
+                        }]);
+                }
+            ])
+                ->where('final_status', 'pending')
+                ->select('id', 'user_id', 'type', 'submission_date', 'final_status', 'notice_period_end_date')
+                ->get();
+
+
+            Log::info('resigned Employees', ['resign' => $resignation]);
             return response()->json([
                 'status' => true,
                 'message' => 'Resigned employees fetched successfully',
@@ -168,10 +185,11 @@ class ResignationController extends Controller
     public function responseToResignation(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'employee_id' => 'required|exists:users,id',
-            'user_id' => 'required|exists:users,id',
             'resignation_id' => 'required|exists:resignation_requests,id',
-            'action' => 'required|in:approve,rejected',
+            'employee_id' => 'required|exists:users,id',
+            'action' => 'required|in:approved,rejected',
+            'approver_id' => 'required|exists:users,id',
+            'approval_order' => 'required|in:1,2',
         ]);
         if ($validator->fails()) {
             return response()->json([
@@ -182,53 +200,49 @@ class ResignationController extends Controller
         }
 
         try {
-            // Update current approver's response
-            $approval = ResignationRequestApproval::where('resignation_request_id', $request->resignation_id)
-                ->where('approver_id', $request->user_id)
-                ->first();
+            // Update the approver’s decision
+            ResignationRequestApproval::where('resignation_request_id', $request->resignation_id)
+                ->where('approver_id', $request->approver_id)
+                ->where('approval_order', $request->approval_order)
+                ->update(['approval_status' => $request->action, 'approval_date' => Carbon::now(),]);
 
-            if (!$approval) {
-                return response()->json(['status' => false, 'message' => 'Invalid approver'], 400);
-            }
+            if ($request->action === 'approved') {
 
-            $approval->update([
-                'approval_status' => $request->action,
-                'approval_date' => now(),
-            ]);
+                $isSecond = ResignationRequestApproval::where('resignation_request_id', $request->resignation_id)
+                    ->where('approval_order', 2)->first();
 
-            // Manager step (order 1)
-            if ($approval->approval_order == 1) {
-                if ($request->action == 'approve') {
-                    // activate CEO approval
-                    ResignationRequestApproval::where('resignation_request_id', $request->resignation_id)
-                        ->where('approval_order', 2)
-                        ->update(['approval_status' => 'pending']);
+                if ($isSecond && $request->approval_order == 1) {
+                    // Manager approved → unlock CEO row (set to pending)
+                    $isSecond->update(['approval_status' => 'pending']);
                 } else {
-                    // Manager rejected -> final reject
                     ResignationRequest::where('id', $request->resignation_id)
-                        ->update(['final_status' => 'rejected']);
-                    User::find($request->employee_id)
-                        ->update(['sepration_status' => 'reversed', 'sepration_date' => null]);
-                }
-            }
+                        ->update(['final_status' => 'approved']);
 
-            // CEO step (order 2)
-            if ($approval->approval_order == 2) {
-                if ($request->action == 'approved') {
-                    ResignationRequest::where('id', $request->resignation_id)
+                    User::where('id', $request->employee_id)
                         ->update([
-                            'final_status' => 'approved',
-                            'effective_date' => now(),
-                            'notice_period_end_date' => now()->addDays(30),
+                            'sepration_status' => 'on_notice',
+                            'sepration_date' => Carbon::now()->addMonths(3)
                         ]);
-                    User::find($request->employee_id)
-                        ->update(['sepration_status' => 'inactive', 'sepration_date' => now()->addDays(30)]);
-                } else {
-                    ResignationRequest::where('id', $request->resignation_id)
-                        ->update(['final_status' => 'rejected']);
-                    User::find($request->employee_id)
-                        ->update(['sepration_status' => 'reversed', 'sepration_date' => null]);
                 }
+
+                // Only CEO (order 2) finalizes approval
+                if ($request->approval_order == 2) {
+                    ResignationRequest::where('id', $request->resignation_id)
+                        ->update(['final_status' => 'approved']);
+
+                    User::where('id', $request->employee_id)
+                        ->update([
+                            'sepration_status' => 'on_notice',
+                            'sepration_date' => Carbon::now()->addMonths(3)
+                        ]);
+                }
+            } else {
+                // If rejected → mark final status immediately
+                ResignationRequest::where('id', $request->resignation_id)
+                    ->update(['final_status' => 'cancelled']);
+
+                User::where('id', $request->employee_id)
+                    ->update(['sepration_status' => 'reversed']);
             }
 
             return response()->json([
@@ -245,8 +259,8 @@ class ResignationController extends Controller
     }
 
     public function cancelResignation(Request $request)
-    { 
-     Log::info('incomng request', $request->all());
+    {
+        Log::info('incomng request', $request->all());
         $validator = Validator::make($request->all(), [
             'user_id' => 'required|exists:users,id',
             'resignation_id' => 'required|exists:resignation_requests,id',
@@ -281,51 +295,4 @@ class ResignationController extends Controller
             ], 500);
         }
     }
-
-
-    // public function responseToResignation(Request $request)
-    // {
-    //     $validator = Validator::make($request->all(), [
-    //         'employee_id' => 'required|exists:users,id',
-    //         'user_id' => 'required|exists:users,id',
-    //         'resignation_id' => 'required|exists:resignation_requests,id',
-    //         'action' => 'required|in:approve,rejected',
-    //     ]);
-    //     if ($validator->fails()) {
-    //         return response()->json([
-    //             'status' => false,
-    //             'message' => 'Validation failed',
-    //             'errors' => $validator->errors()
-    //         ], 422);
-    //     }
-    //     try {
-    //         ResignationRequestApproval::where('resignation_request_id', $request->resignation_id)
-    //             ->where('approver_id', $request->user_id)
-    //             ->update([
-    //                 'approval_status' => $request->action,
-    //                 'approval_date' => now(),
-    //                 'updated_at' => now(),
-    //             ]);
-
-    //         $isFinalApproval = ResignationRequestApproval::where('resignation_request_id', $request->resignation_id)->where('approval_order', 2)->where('approval_status', 'approved')->exists();
-    //         if ($isFinalApproval) {
-
-    //             ResignationRequest::where('id', $request->resignation_id)->update(['final_status' => 'approved', 'effective_date' => now(), 'notice_period_end_date' => now()->addDays(30)]);
-    //             User::find($request->employee_id)->update(['sepration_status' => 'inactive', 'sepration_date' => now()]);
-    //         } else {
-    //             ResignationRequest::where('id', $request->resignation_id)->update(['final_status' => 'rejected']);
-    //             User::find($request->employee_id)->update(['sepration_status' => 'reversed', 'sepration_date' => null]);
-    //         }
-    //         return response()->json([
-    //             'status' => true,
-    //             'message' => 'Responding to resignation successfully',
-    //         ], 200);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'status' => false,
-    //             'message' => 'An error occurred while responding to resignation',
-    //             'error' => $e->getMessage()
-    //         ], 500);
-    //     }
-    // }
 }

@@ -24,7 +24,7 @@ class VerifyToken
         $accesssToken = $request->cookie('access_token');
 
         if (!$accesssToken) {
-            Log::warning('JWT Middleware: No access_token cookie found');
+            // Log::warning('JWT Middleware: No access_token cookie found');
             return response()->json(['error' => 'Access token missing'], 401);
         }
 
@@ -35,21 +35,21 @@ class VerifyToken
 
             // Set token manually
             $user = JWTAuth::setToken($accesssToken)->authenticate();
-            Log::info('JWT Middleware: user', [
-                'user' => $user
-            ]);
+            // Log::info('JWT Middleware: user', [
+            //     'user' => $user
+            // ]);
 
             if (!$user) {
-                Log::error('JWT Middleware: Token valid but no user returned');
+                // Log::error('JWT Middleware: Token valid but no user returned');
                 return response()->json(['error' => 'User not found'], 401);
             }
 
             // Bind user into request auth context
             Auth::setUser($user);
 
-            Log::info('JWT Middleware: User authenticated', [
-                'id' => $user->id,
-            ]);
+            // Log::info('JWT Middleware: User authenticated', [
+            //     'id' => $user->id,
+            // ]);
         } catch (TokenExpiredException $e) {
             Log::error('JWT Middleware: Token expired', ['message' => $e->getMessage()]);
             return response()->json(['error' => 'Token expired'], 401);

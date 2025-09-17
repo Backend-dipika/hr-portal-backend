@@ -43,6 +43,5 @@ Route::prefix('/resign')->middleware('verify.tokens')->group(function () {
     Route::post('/initiate', [ResignationController::class, 'initiateResignation']);
     Route::get('/check', [ResignationController::class, 'checkIfResigned']);
     Route::post('/cancel', [ResignationController::class, 'cancelResignation']);
+    Route::post('/response', [ResignationController::class, 'responseToResignation']);
 });
- 
-
