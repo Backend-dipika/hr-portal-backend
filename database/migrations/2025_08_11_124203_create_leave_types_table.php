@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('leave_types', function (Blueprint $table) {
            $table->id();
-            $table->enum('name', ['paid', 'unpaid', 'compoff', 'halfday']);
+            $table->enum('name', ['paid', 'unpaid', 'compoff', 'halfday', 'maternity']);
             $table->integer('max_allowed_days')->default(0);
             $table->boolean('requires_approval')->default(true);
             $table->timestamps();

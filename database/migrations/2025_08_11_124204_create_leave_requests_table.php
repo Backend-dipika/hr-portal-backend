@@ -15,7 +15,7 @@ return new class extends Migration
                $table->id();
             $table->unsignedBigInteger('user_id');
             $table->unsignedBigInteger('leave_type_id');
-            $table->string('duration_type'); // e.g., 'full_day', 'half_day', etc.
+            $table->string('duration_type')->nullable();// e.g., 'first_half', 'second_half', etc.
             $table->date('start_date');
             $table->date('end_date');
             $table->date('actual_end_date')->nullable();

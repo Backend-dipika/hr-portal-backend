@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\manage_Leaves\LeaveRequestController;
 use App\Http\Controllers\resignation\ResignationController;
 use App\Http\Controllers\user\ProfileController;
 use App\Http\Controllers\user\AuthController;
@@ -8,6 +9,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Nuwave\Lighthouse\Http\GraphQLController;
 
+
+Route::options('{any}', function (Request $request) {
+    return response()->json([], 200);
+})->where('any', '.*');
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -38,6 +43,7 @@ Route::middleware('verify.tokens')->group(function () {
     Route::get('/get-departments', [ProfileController::class, 'sendDepartments']);
 });
 
+
 Route::prefix('/resign')->middleware('verify.tokens')->group(function () {
     Route::get('/employees', [ResignationController::class, 'showResignedEmployees']);
     Route::post('/initiate', [ResignationController::class, 'initiateResignation']);
@@ -46,3 +52,4 @@ Route::prefix('/resign')->middleware('verify.tokens')->group(function () {
 });
  
 
+Route::middleware('verify.tokens')->post('/leaves', [LeaveRequestController::class, 'store']);
