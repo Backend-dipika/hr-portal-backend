@@ -23,6 +23,10 @@ class ResignationRequest extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+    public function requestedBy()
+    {
+        return $this->hasMany(User::class, 'requested_by_id');
+    }
 
     public function approvals()
     {
