@@ -1,8 +1,9 @@
-<?php 
+<?php
 
 namespace App\Http\Controllers\manage_Leaves;
 
 use App\Http\Controllers\Controller;
+use App\Models\LeaveApproval;
 use Illuminate\Http\Request;
 use App\Models\LeaveRequest;
 use Illuminate\Support\Facades\Auth;
@@ -37,6 +38,7 @@ class LeaveRequestController extends Controller
             $totalDaysRequested = 0.5; // half day counts as 0.5
         }
 
+        // Create leave request
         $leaveRequest = LeaveRequest::create([
             'user_id'              => $user->id,
             'leave_type_id'        => $validated['leave_type_id'],
@@ -50,9 +52,51 @@ class LeaveRequestController extends Controller
             'total_days_approved'  => 0,
         ]);
 
+        // Create approval record
+        LeaveApproval::create([
+            'leave_request_id' => $leaveRequest->id,
+            'approver_id'      => null, // must be valid or nullable
+            'level'            => 1,
+            'status'           => 'pending',
+            'action_type'      => 'leave_approval', // ✅ matches enum
+        ]);
+
         return response()->json([
             'message' => 'Leave request submitted successfully.',
             'data'    => $leaveRequest,
         ], 201);
+    }
+
+    public function index()
+    {
+        $requests = LeaveRequest::with(['user', 'leaveType'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($request) {
+                return [
+                    'id' => $request->id,
+                    'employee_name' => trim(
+                        $request->user?->first_name . ' ' . $request->user?->last_name
+                    ) ?: 'Unknown',
+                    'leave_type' => $request->leaveType?->name ?? 'N/A',
+                    'duration_type' => $request->duration_type,
+                    // ✅ Format dates to YYYY-MM-DD
+'start_date' => \Carbon\Carbon::parse($request->start_date)->format('d/m'),
+'end_date'   => \Carbon\Carbon::parse($request->end_date)->format('d/m'),
+
+
+                    'reason' => $request->reason,
+                    'status' => $request->status,
+                    'total_days_requested' => $request->total_days_requested,
+                    'total_days_approved' => $request->total_days_approved,
+                    // ✅ Optionally also format created_at
+                    'created_at' => $request->created_at->format('Y-m-d H:i'),
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $requests,
+        ]);
     }
 }

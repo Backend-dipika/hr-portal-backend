@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('leave_approvals', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('leave_request_id');
-            $table->unsignedBigInteger('approver_id');
+            $table->unsignedBigInteger('approver_id')->nullable();
             $table->integer('level')->default(0); // approval level (e.g., 1st, 2nd level)
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->enum('action_type', ['leave_approval', 'cancel_leave_approval', 'duration_modification']);

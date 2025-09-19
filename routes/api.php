@@ -54,3 +54,4 @@ Route::prefix('/resign')->middleware('verify.tokens')->group(function () {
  
 
 Route::middleware('verify.tokens')->post('/leaves', [LeaveRequestController::class, 'store']);
+Route::middleware('verify.tokens')->get('/leave-requests', [LeaveRequestController::class, 'index']);

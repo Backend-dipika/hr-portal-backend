@@ -22,6 +22,7 @@ class LogAccessToken
             'path'  => $request->path(),
             'ip'    => $request->ip(),
         ]);
+
         return $next($request);
     }
 }
