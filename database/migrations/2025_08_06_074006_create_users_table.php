@@ -41,7 +41,7 @@ return new class extends Migration
             $table->boolean('is_disable')->default(false);
             $table->string('profile_picture')->nullable();
             $table->date('sepration_date')->nullable();
-            $table->enum('sepration_status', ['active', 'on_notice', 'inactive', 'reversed','resigned'])->default('active')->nullable();
+            $table->enum('sepration_status', ['active',  'inactive', 'reversed','resigned'])->default('active')->nullable(); //'on_notice',
 
 
             $table->rememberToken();

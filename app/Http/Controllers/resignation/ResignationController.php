@@ -232,7 +232,7 @@ class ResignationController extends Controller
 
                     User::where('id', $request->employee_id)
                         ->update([
-                            'sepration_status' => 'on_notice',
+                            'sepration_status' => 'resigned',
                             'sepration_date' => Carbon::now()->addMonths(3)
                         ]);
                 }

@@ -214,13 +214,40 @@ class AuthController extends Controller
     }
 
 
+    // public function sendUserDetails(Request $request)
+    // {
+    //     $user = $request->user();
+    //     return response()->json([
+    //         'id' => $user->id,
+    //         'role' => $user->role_id
+    //     ], 200);
+    // }
     public function sendUserDetails(Request $request)
     {
-        $user = $request->user();
-        return response()->json([
-            'id' => $user->id,
-            'role' => $user->role_id
-        ], 200);
+        try {
+            Log::info('inside get user info');
+            $user = $request->user();
+
+            if (!$user) {
+                return response()->json([
+                    'error' => 'User not authenticated'
+                ], 401);
+            }
+
+            return response()->json([
+                'id' => $user->id,
+                'role' => $user->role_id
+            ], 200);
+        } catch (\Exception $e) {
+            // Log the error with stack trace
+            Log::error('Error in sendUserDetails: ' . $e->getMessage(), [
+                'exception' => $e
+            ]);
+
+            return response()->json([
+                'error' => 'Something went wrong while fetching user details'
+            ], 500);
+        }
     }
 }
 
