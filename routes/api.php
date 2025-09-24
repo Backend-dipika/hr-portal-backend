@@ -72,3 +72,8 @@ Route::prefix('/notification')->middleware('verify.tokens')->group(function () {
 
 Route::middleware('verify.tokens')->post('/leaves', [LeaveRequestController::class, 'store']);
 Route::middleware('verify.tokens')->get('/leave-requests', [LeaveRequestController::class, 'index']);
+
+Route::prefix('leave')->middleware('verify.tokens')->group(function () {
+    Route::post('/{id}/approve', [LeaveRequestController::class, 'approveLeave'])->name('leave.approve');
+    Route::post('/{id}/reject', [LeaveRequestController::class, 'rejectLeave'])->name('leave.reject');
+});

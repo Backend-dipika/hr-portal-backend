@@ -4,8 +4,10 @@ namespace App\Http\Controllers\manage_Leaves;
 
 use App\Http\Controllers\Controller;
 use App\Models\LeaveApproval;
+use App\Models\LeaveBalance;
 use Illuminate\Http\Request;
 use App\Models\LeaveRequest;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 
 class LeaveRequestController extends Controller
@@ -81,10 +83,8 @@ class LeaveRequestController extends Controller
                     'leave_type' => $request->leaveType?->name ?? 'N/A',
                     'duration_type' => $request->duration_type,
                     // ✅ Format dates to YYYY-MM-DD
-'start_date' => \Carbon\Carbon::parse($request->start_date)->format('d/m'),
-'end_date'   => \Carbon\Carbon::parse($request->end_date)->format('d/m'),
-
-
+                    'start_date' => \Carbon\Carbon::parse($request->start_date)->format('d/m'),
+                    'end_date'   => \Carbon\Carbon::parse($request->end_date)->format('d/m'),
                     'reason' => $request->reason,
                     'status' => $request->status,
                     'total_days_requested' => $request->total_days_requested,
@@ -97,6 +97,88 @@ class LeaveRequestController extends Controller
         return response()->json([
             'success' => true,
             'data' => $requests,
+        ]);
+    }
+
+    /**
+     * Approve a leave request
+     */
+    public function approveLeave(Request $request, $id)
+    {
+        $leaveRequest = LeaveRequest::findOrFail($id);
+        $approver = Auth::user();
+
+        if ($leaveRequest->status !== 'pending') {
+            return response()->json(['message' => 'Leave already processed.'], 400);
+        }
+
+        // ✅ Deduct leave days from LeaveBalance
+        $balance = LeaveBalance::where('user_id', $leaveRequest->user_id)
+            ->where('leave_type_id', $leaveRequest->leave_type_id)
+            ->where('year', Carbon::now()->year)
+            ->first();
+
+        if (!$balance) {
+            return response()->json(['message' => 'No leave balance found.'], 404);
+        }
+
+        if ($balance->remaining_days < $leaveRequest->total_days_requested) {
+            return response()->json(['message' => 'Not enough leave balance.'], 400);
+        }
+
+        // Update leave balance
+        $balance->used_days += $leaveRequest->total_days_requested;
+        $balance->remaining_days -= $leaveRequest->total_days_requested;
+        $balance->save();
+
+        // Update leave request
+        $leaveRequest->status = 'approved';
+        $leaveRequest->total_days_approved = $leaveRequest->total_days_requested;
+        $leaveRequest->approved_on = now();
+        $leaveRequest->save();
+
+        // Update approval record
+        LeaveApproval::where('leave_request_id', $leaveRequest->id)
+            ->update([
+                'approver_id' => $approver->id,
+                'status' => 'approved',
+                'action_type' => 'leave_approval',
+            ]);
+
+        return response()->json([
+            'message' => 'Leave approved successfully.',
+            'data' => $leaveRequest,
+        ]);
+    }
+
+    /**
+     * Reject a leave request
+     */
+    public function rejectLeave(Request $request, $id)
+    {
+        $leaveRequest = LeaveRequest::findOrFail($id);
+        $approver = Auth::user();
+
+        if ($leaveRequest->status !== 'pending') {
+            return response()->json(['message' => 'Leave already processed.'], 400);
+        }
+
+        // Update leave request
+        $leaveRequest->status = 'rejected';
+        $leaveRequest->approved_on = now();
+        $leaveRequest->save();
+
+        // Update approval record
+        LeaveApproval::where('leave_request_id', $leaveRequest->id)
+            ->update([
+                'approver_id' => $approver->id,
+                'status' => 'rejected',
+                'action_type' => 'leave_rejection',
+            ]);
+
+        return response()->json([
+            'message' => 'Leave rejected successfully.',
+            'data' => $leaveRequest,
         ]);
     }
 }

@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             EmployeeTypeSeeder::class,
             UserSeeder::class,
             LeaveTypeSeeder::class,
+            LeaveBalanceSeeder::class,
         ]);
         // User::factory(10)->create();
         // User::factory()->create([
