@@ -138,18 +138,18 @@ class ResignationController extends Controller
                 $approvers = [
                     [
                         'id' => $user->reporting_manager_id, // Default to 1 if no manager
-                        'order' => 1,
+                        'order' => 1,//manger
                     ],
                     [
                         'id' => 1, //CEO ID is 1
-                        'order' => 2,
+                        'order' => 2,//ceo
                     ],
                 ];
             } else {
                 $approvers = [
                     [
                         'id' => 1, //CEO ID is 1
-                        'order' => 1,
+                        'order' => 1,//ceo if manger has applied 
                     ],
                 ];
             }

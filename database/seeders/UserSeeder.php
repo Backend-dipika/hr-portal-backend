@@ -123,7 +123,7 @@ class UserSeeder extends Seeder
                     'office_email' => 'john.doe@company.com',
                     'phone_no' => '9999999999',
                     'alt_phone_no' => '8888888888',
-                    'role_id' => 1,
+                    'role_id' => 3,
                     'department_id' => 3,
                     'designation_id' => 1,
                     'date_of_joining' => '2022-01-01',
