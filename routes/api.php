@@ -3,6 +3,7 @@
 use App\Http\Controllers\appreciation\AppreciationController;
 use App\Http\Controllers\holiday\holidaysController;
 use App\Http\Controllers\manage_Leaves\LeaveRequestController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\resignation\ResignationController;
 use App\Http\Controllers\user\ProfileController;
 use App\Http\Controllers\user\AuthController;
@@ -62,6 +63,10 @@ Route::prefix('/holidays')->middleware('verify.tokens')->group(function () {
 Route::prefix('/appreciation')->middleware('verify.tokens')->group(function () {
     Route::post('/send', [AppreciationController::class, 'sendAppreiation']);
     Route::get('/get-user', [AppreciationController::class, 'sendUsername']);
+});
+
+Route::prefix('/notification')->middleware('verify.tokens')->group(function () {
+    Route::get('/all', [NotificationController::class, 'getNotifications']);
 });
 
 

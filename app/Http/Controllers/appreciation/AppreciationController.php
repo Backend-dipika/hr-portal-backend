@@ -5,6 +5,7 @@ namespace App\Http\Controllers\appreciation;
 use App\Http\Controllers\Controller;
 use App\Models\Appreciation;
 use App\Models\User;
+use App\Notifications\AppreciationNotification;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
@@ -27,7 +28,7 @@ class AppreciationController extends Controller
     }
     public function sendAppreiation(Request $request)
     {
-        Log::info("send apperection",$request->all());
+        Log::info("send apperection", $request->all());
         // Log::info('Holiday request data:', $request->all());
         $validator = Validator::make($request->all(), [
             'from_user_id' => 'required|exists:users,id',
@@ -53,6 +54,18 @@ class AppreciationController extends Controller
                 'message' => $request->message,
                 'date_of_appreciation' => Carbon::now(),
             ]);
+            $toUser = User::find($request->to_user_id);
+            if (!$toUser) {
+                throw new \Exception("Recipient user not found for ID {$request->to_user_id}");
+            }
+            $messageData = [
+                'from_user_id' => $request->from_user_id,
+                'to_user_id' => $request->to_user_id,
+                'category' => $request->category,
+                'title' => $request->title,
+                'message' => $request->message,
+            ];
+            $toUser->notify(new AppreciationNotification($messageData));
             return response()->json(['status' => true, 'message' => 'Apreciation sent'], 200);
         } catch (Exception $e) {
             return response()->json(['status' => false, 'message' => 'Error while saving Appreciation', 'error' => $e->getMessage()], 500);

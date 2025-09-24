@@ -13,6 +13,13 @@ class User extends Authenticatable implements JWTSubject
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
+
+    // Tell Laravel which column to use for sending mails
+    public function routeNotificationForMail($notification)
+    {
+        return $this->office_email;
+    }
+
     /**
      * The attributes that are mass assignable.
      *
