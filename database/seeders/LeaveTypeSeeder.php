@@ -15,31 +15,42 @@ class LeaveTypeSeeder extends Seeder
         $leaveTypes = [
             [
                 'name' => 'paid',
+                'type' => 'Regular',
+                'code' => 'PL',
                 'max_allowed_days' => 30,
-                'requires_approval' => true,
+                'is_paid' => true,
+            ],
+
+            [
+                'name' => 'compoff',
+                'type' => 'compensatory off',
+                'code' => 'CF',
+                'max_allowed_days' => 10,
+                'is_paid' => true,
             ],
             [
                 'name' => 'unpaid',
+                'type' => 'unpaid leave',
+                'code' => '',
                 'max_allowed_days' => 0, // unlimited (could be treated as no cap)
-                'requires_approval' => true,
-            ],
-            [
-                'name' => 'compoff',
-                'max_allowed_days' => 10,
-                'requires_approval' => true,
+                'is_paid' => false,
             ],
             [
                 'name' => 'halfday',
+                'type' => 'half day leave',
+                'code' => '',
                 'max_allowed_days' => 30,
-                'requires_approval' => true,
+                'is_paid' => true,
             ],
-                        [
+            [
                 'name' => 'maternity',
+                'type' => 'maternity leave',
+                'code' => '',
                 'max_allowed_days' => 180,
-                'requires_approval' => true,
+                'is_paid' => true,
             ],
 
-            
+
         ];
 
         foreach ($leaveTypes as $type) {

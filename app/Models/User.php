@@ -122,10 +122,6 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->belongsTo(Role::class, 'role_id');
     }
-    // public function reportingManager()
-    // {
-    //     return $this->hasOne(User::class, 'reporting_manager_id');
-    // }
     public function reportingManager()
     {
         return $this->belongsTo(User::class, 'reporting_manager_id');
@@ -139,5 +135,10 @@ class User extends Authenticatable implements JWTSubject
     public function requestedResignations()
     {
         return $this->hasMany(ResignationRequest::class, 'requested_by_id');
+    }
+
+    public function leaveBalances()
+    {
+        return $this->hasOne(LeaveBalance::class, 'user_id');
     }
 }

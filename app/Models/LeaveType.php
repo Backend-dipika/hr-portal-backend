@@ -10,12 +10,13 @@ class LeaveType extends Model
    // use HasFactory;
 
     protected $fillable = [
-        'name',
+        'name','type', 'code',
         'max_allowed_days',
-        'requires_approval',
+        'is_paid',
+
     ];
 
     protected $casts = [
-        'requires_approval' => 'boolean',
+        'is_paid' => 'boolean',
     ];
 }

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class LeaveBalance extends Model
 {
-       protected $fillable = [
+    protected $fillable = [
         'user_id',
         'leave_type_id',
         'year',
@@ -15,4 +15,14 @@ class LeaveBalance extends Model
         'remaining_days',
         'carry_forward_days',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function leaveType()
+    {
+        return $this->belongsTo(LeaveType::class);
+    }
 }

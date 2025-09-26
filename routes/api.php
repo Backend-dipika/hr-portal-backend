@@ -3,6 +3,7 @@
 use App\Http\Controllers\appreciation\AppreciationController;
 use App\Http\Controllers\holiday\holidaysController;
 use App\Http\Controllers\manage_Leaves\LeaveRequestController;
+use App\Http\Controllers\manage_Leaves\LeaveTypeController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\resignation\ResignationController;
 use App\Http\Controllers\user\ProfileController;
@@ -77,6 +78,15 @@ Route::prefix('leave')->middleware('verify.tokens')->group(function () {
     Route::post('/{id}/approve', [LeaveRequestController::class, 'approveLeave'])->name('leave.approve');
     Route::post('/{id}/reject', [LeaveRequestController::class, 'rejectLeave'])->name('leave.reject');
 });
+
+Route::prefix('leave-types')->middleware('verify.tokens')->group(function () {
+    Route::get('/show', [LeaveTypeController::class, 'index']);
+    Route::post('/add', [LeaveTypeController::class, 'store']);
+    Route::put('/update', [LeaveTypeController::class, 'update']);
+    Route::delete('/delete/{id}', [LeaveTypeController::class, 'destroy']);
+    Route::get('/pending', [LeaveTypeController::class, 'showPendingLeavesOfAllEmployees']);
+});
+
 
 Route::middleware('verify.tokens')->group(function () {
     // Fetch all leaves of the authenticated user
