@@ -12,6 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('leave_approvals', function (Blueprint $table) {
+            
             $table->id();
             $table->unsignedBigInteger('leave_request_id');
             $table->unsignedBigInteger('approver_id')->nullable();
@@ -19,7 +20,7 @@ return new class extends Migration
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->enum('action_type', ['leave_approval', 'cancel_leave_approval', 'duration_modification']);
             $table->timestamps();
-
+             $table->timestamp('approved_on')->nullable();
             //Foreign keys
             $table->foreign('leave_request_id')->references('id')->on('leave_requests')->onDelete('cascade');
             $table->foreign('approver_id')->references('id')->on('users')->onDelete('cascade');

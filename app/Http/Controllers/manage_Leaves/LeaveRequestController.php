@@ -22,7 +22,7 @@ class LeaveRequestController extends Controller
             'start_date'    => 'required|date',
             'end_date'      => 'required|date|after_or_equal:start_date',
             'reason'        => 'nullable|string|max:255',
-            'half_day_type' => 'nullable|string|in:first,second', // optional for half-day
+            'half_day_type' => 'nullable|string|in:first,second',
         ]);
 
         $user = Auth::user();
@@ -32,12 +32,12 @@ class LeaveRequestController extends Controller
         $endDate   = new \DateTime($validated['end_date']);
         $totalDaysRequested = $endDate->diff($startDate)->days + 1;
 
-        $durationType = null; // default null
+        $durationType = null;
 
-        // If leave type is half-day (assuming type_id = 4)
+        // Handle half-day leave
         if ($validated['leave_type_id'] == 4 && !empty($validated['half_day_type'])) {
             $durationType = $validated['half_day_type'] === 'first' ? 'first_half' : 'second_half';
-            $totalDaysRequested = 0.5; // half day counts as 0.5
+            $totalDaysRequested = 0.5;
         }
 
         // Create leave request
@@ -54,14 +54,29 @@ class LeaveRequestController extends Controller
             'total_days_approved'  => 0,
         ]);
 
-        // Create approval record
-        LeaveApproval::create([
-            'leave_request_id' => $leaveRequest->id,
-            'approver_id'      => null, // must be valid or nullable
-            'level'            => 1,
-            'status'           => 'pending',
-            'action_type'      => 'leave_approval', // ✅ matches enum
-        ]);
+        // Get Super Admin ID (first user with role_id = 1)
+        $superAdmin = \App\Models\User::where('role_id', 1)->first();
+
+        // Get reporting manager ID from relation
+        $reportingManagerId = $user->reporting_manager_id;
+
+        // Workflow levels with approver IDs
+        $workflowLevels = [
+            1 => $superAdmin?->id,
+            2 => $reportingManagerId,
+        ];
+
+        foreach ($workflowLevels as $level => $approverId) {
+            if ($approverId) { // only create if approver exists
+                LeaveApproval::create([
+                    'leave_request_id' => $leaveRequest->id,
+                    'approver_id'      => $approverId,
+                    'level'            => $level,
+                    'status'           => 'pending',
+                    'action_type'      => 'leave_approval',
+                ]);
+            }
+        }
 
         return response()->json([
             'message' => 'Leave request submitted successfully.',
@@ -69,6 +84,114 @@ class LeaveRequestController extends Controller
         ], 201);
     }
 
+    /**
+     * Approve a leave request (per level)
+     */
+    public function approveLeave(Request $request, $id)
+    {
+        $leaveRequest = LeaveRequest::findOrFail($id);
+        $approver = Auth::user();
+
+        // Prevent approving a leave already finalized
+        if (in_array($leaveRequest->status, ['approved', 'rejected'])) {
+            return response()->json(['message' => 'Leave already processed.'], 400);
+        }
+
+        // Find or create pending approval for this approver
+        $approval = LeaveApproval::firstOrCreate(
+            [
+                'leave_request_id' => $leaveRequest->id,
+                'approver_id' => $approver->id,
+                'status' => 'pending',
+            ],
+            [
+                'level' => 1, // default level if not provided
+                'action_type' => 'leave_approval',
+            ]
+        );
+
+        // Approve current level
+        $approval->status = 'approved';
+        $approval->approved_on = now();
+        $approval->save();
+
+        // Check if any approvals are still pending
+        $anyPending = LeaveApproval::where('leave_request_id', $leaveRequest->id)
+            ->where('status', 'pending')
+            ->exists();
+
+        if (!$anyPending) {
+            // All levels approved → finalize leave request
+            $balance = LeaveBalance::where('user_id', $leaveRequest->user_id)
+                ->where('leave_type_id', $leaveRequest->leave_type_id)
+                ->where('year', Carbon::now()->year)
+                ->first();
+
+            if (!$balance) {
+                return response()->json(['message' => 'No leave balance found.'], 404);
+            }
+
+            if ($balance->remaining_days < $leaveRequest->total_days_requested) {
+                return response()->json(['message' => 'Not enough leave balance.'], 400);
+            }
+
+            $balance->used_days += $leaveRequest->total_days_requested;
+            $balance->remaining_days -= $leaveRequest->total_days_requested;
+            $balance->save();
+
+            $leaveRequest->status = 'approved';
+            $leaveRequest->total_days_approved = $leaveRequest->total_days_requested;
+            $leaveRequest->approved_on = now();
+            $leaveRequest->save();
+        }
+
+        return response()->json([
+            'message' => 'Leave approved successfully.',
+            'data' => $leaveRequest,
+        ]);
+    }
+
+
+    /**
+     * Reject a leave request (any level)
+     */
+    public function rejectLeave(Request $request, $id)
+    {
+        $leaveRequest = LeaveRequest::findOrFail($id);
+        $approver = Auth::user();
+
+        if ($leaveRequest->status !== 'pending') {
+            return response()->json(['message' => 'Leave already processed.'], 400);
+        }
+
+        // Update current approver record
+        $approval = LeaveApproval::where('leave_request_id', $leaveRequest->id)
+            ->where('status', 'pending')
+            ->where('approver_id', $approver->id)
+            ->first();
+
+        if ($approval) {
+            $approval->status = 'rejected';
+            $approval->action_type = 'leave_rejection';
+            $approval->approved_on = now();
+            $approval->save();
+        }
+
+        // Reject the entire leave request immediately
+        $leaveRequest->status = 'rejected';
+        $leaveRequest->approved_on = now();
+        $leaveRequest->total_days_approved = 0;
+        $leaveRequest->save();
+
+        return response()->json([
+            'message' => 'Leave rejected successfully.',
+            'data' => $leaveRequest,
+        ]);
+    }
+
+    /**
+     * List all leave requests
+     */
     public function index()
     {
         $requests = LeaveRequest::with(['user', 'leaveType'])
@@ -82,14 +205,12 @@ class LeaveRequestController extends Controller
                     ) ?: 'Unknown',
                     'leave_type' => $request->leaveType?->name ?? 'N/A',
                     'duration_type' => $request->duration_type,
-                    // ✅ Format dates to YYYY-MM-DD
-                    'start_date' => \Carbon\Carbon::parse($request->start_date)->format('d/m'),
-                    'end_date'   => \Carbon\Carbon::parse($request->end_date)->format('d/m'),
+                    'start_date' => Carbon::parse($request->start_date)->format('d/m'),
+                    'end_date'   => Carbon::parse($request->end_date)->format('d/m'),
                     'reason' => $request->reason,
                     'status' => $request->status,
                     'total_days_requested' => $request->total_days_requested,
                     'total_days_approved' => $request->total_days_approved,
-                    // ✅ Optionally also format created_at
                     'created_at' => $request->created_at->format('Y-m-d H:i'),
                 ];
             });
@@ -100,85 +221,81 @@ class LeaveRequestController extends Controller
         ]);
     }
 
+    
     /**
-     * Approve a leave request
+     * List leave requests of the authenticated user
      */
-    public function approveLeave(Request $request, $id)
+    public function userLeaves()
     {
-        $leaveRequest = LeaveRequest::findOrFail($id);
-        $approver = Auth::user();
+        $user = Auth::user();
 
-        if ($leaveRequest->status !== 'pending') {
-            return response()->json(['message' => 'Leave already processed.'], 400);
-        }
-
-        // ✅ Deduct leave days from LeaveBalance
-        $balance = LeaveBalance::where('user_id', $leaveRequest->user_id)
-            ->where('leave_type_id', $leaveRequest->leave_type_id)
-            ->where('year', Carbon::now()->year)
-            ->first();
-
-        if (!$balance) {
-            return response()->json(['message' => 'No leave balance found.'], 404);
-        }
-
-        if ($balance->remaining_days < $leaveRequest->total_days_requested) {
-            return response()->json(['message' => 'Not enough leave balance.'], 400);
-        }
-
-        // Update leave balance
-        $balance->used_days += $leaveRequest->total_days_requested;
-        $balance->remaining_days -= $leaveRequest->total_days_requested;
-        $balance->save();
-
-        // Update leave request
-        $leaveRequest->status = 'approved';
-        $leaveRequest->total_days_approved = $leaveRequest->total_days_requested;
-        $leaveRequest->approved_on = now();
-        $leaveRequest->save();
-
-        // Update approval record
-        LeaveApproval::where('leave_request_id', $leaveRequest->id)
-            ->update([
-                'approver_id' => $approver->id,
-                'status' => 'approved',
-                'action_type' => 'leave_approval',
-            ]);
+        $leaves = LeaveRequest::with(['leaveType', 'approvals.approver'])
+            ->where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($leave) {
+                return [
+                    'id' => $leave->id,
+                    'leave_type' => $leave->leaveType?->name ?? 'N/A',
+                    'start_date' => Carbon::parse($leave->start_date)->format('Y-m-d'),
+                    'end_date' => Carbon::parse($leave->end_date)->format('Y-m-d'),
+                    'reason' => $leave->reason,
+                    'status' => $leave->status,
+                    'total_days_requested' => $leave->total_days_requested,
+                    'total_days_approved' => $leave->total_days_approved,
+                    'approvals' => $leave->approvals->map(function ($approval) {
+                        return [
+                            'level' => $approval->level,
+                            'approver_name' => trim(($approval->approver?->first_name ?? '') . ' ' . ($approval->approver?->last_name ?? '')) ?: 'Pending',
+                            'status' => $approval->status,
+                            'approved_on' => $approval->approved_on ? Carbon::parse($approval->approved_on)->format('Y-m-d H:i') : null,
+                        ];
+                    })->sortBy('level')->values(),
+                ];
+            });
 
         return response()->json([
-            'message' => 'Leave approved successfully.',
-            'data' => $leaveRequest,
+            'success' => true,
+            'data' => $leaves,
         ]);
     }
 
     /**
-     * Reject a leave request
+     * Show status of a single leave request for authenticated user
      */
-    public function rejectLeave(Request $request, $id)
+    public function leaveStatus($id)
     {
-        $leaveRequest = LeaveRequest::findOrFail($id);
-        $approver = Auth::user();
+        $user = Auth::user();
 
-        if ($leaveRequest->status !== 'pending') {
-            return response()->json(['message' => 'Leave already processed.'], 400);
+        $leave = LeaveRequest::with(['leaveType', 'approvals.approver'])
+            ->where('id', $id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$leave) {
+            return response()->json(['message' => 'Leave not found'], 404);
         }
 
-        // Update leave request
-        $leaveRequest->status = 'rejected';
-        $leaveRequest->approved_on = now();
-        $leaveRequest->save();
-
-        // Update approval record
-        LeaveApproval::where('leave_request_id', $leaveRequest->id)
-            ->update([
-                'approver_id' => $approver->id,
-                'status' => 'rejected',
-                'action_type' => 'leave_rejection',
-            ]);
-
         return response()->json([
-            'message' => 'Leave rejected successfully.',
-            'data' => $leaveRequest,
+            'leave_request' => [
+                'id' => $leave->id,
+                'leave_type' => $leave->leaveType?->name ?? 'N/A',
+                'start_date' => Carbon::parse($leave->start_date)->format('Y-m-d'),
+                'end_date' => Carbon::parse($leave->end_date)->format('Y-m-d'),
+                'reason' => $leave->reason,
+                'status' => $leave->status,
+                'total_days_requested' => $leave->total_days_requested,
+                'total_days_approved' => $leave->total_days_approved,
+                'approved_on' => $leave->approved_on ? Carbon::parse($leave->approved_on)->format('Y-m-d H:i') : null,
+            ],
+            'approvals' => $leave->approvals->map(function ($approval) {
+                return [
+                    'level' => $approval->level,
+                    'approver_name' => trim(($approval->approver?->first_name ?? '') . ' ' . ($approval->approver?->last_name ?? '')) ?: 'Pending',
+                    'status' => $approval->status,
+                    'approved_on' => $approval->approved_on ? Carbon::parse($approval->approved_on)->format('Y-m-d H:i') : null,
+                ];
+            })->sortBy('level')->values(),
         ]);
     }
 }

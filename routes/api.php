@@ -77,3 +77,11 @@ Route::prefix('leave')->middleware('verify.tokens')->group(function () {
     Route::post('/{id}/approve', [LeaveRequestController::class, 'approveLeave'])->name('leave.approve');
     Route::post('/{id}/reject', [LeaveRequestController::class, 'rejectLeave'])->name('leave.reject');
 });
+
+Route::middleware('verify.tokens')->group(function () {
+    // Fetch all leaves of the authenticated user
+    Route::get('/my-leaves', [LeaveRequestController::class, 'userLeaves']);
+    
+    // Fetch leave status of a specific leave
+    Route::get('/my-leaves/{id}/status', [LeaveRequestController::class, 'leaveStatus']);
+});

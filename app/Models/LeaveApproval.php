@@ -12,5 +12,12 @@ class LeaveApproval extends Model
         'level',
         'status',
         'action_type',
+        'approved_on',
     ];
+
+    public function approver()
+{
+    return $this->belongsTo(User::class, 'approver_id');
+}
+
 }
