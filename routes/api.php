@@ -83,7 +83,7 @@ Route::prefix('leave-types')->middleware('verify.tokens')->group(function () {
     Route::get('/show', [LeaveTypeController::class, 'index']);
     Route::post('/add', [LeaveTypeController::class, 'store']);
     Route::put('/update', [LeaveTypeController::class, 'update']);
-    Route::delete('/delete/{id}', [LeaveTypeController::class, 'destroy']);
+    Route::post('/cancel/{id}', [LeaveRequestController::class, 'cancelLeave']);
     Route::get('/pending', [LeaveTypeController::class, 'showPendingLeavesOfAllEmployees']);
 });
 
