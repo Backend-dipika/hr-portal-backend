@@ -4,6 +4,7 @@ use App\Http\Controllers\appreciation\AppreciationController;
 use App\Http\Controllers\holiday\holidaysController;
 use App\Http\Controllers\manage_Leaves\LeaveRequestController;
 use App\Http\Controllers\manage_Leaves\LeaveTypeController;
+use App\Http\Controllers\manage_Leaves\YearEndLeaveController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\resignation\ResignationController;
 use App\Http\Controllers\user\ProfileController;
@@ -88,10 +89,18 @@ Route::prefix('leave-types')->middleware('verify.tokens')->group(function () {
 });
 
 
+
+Route::prefix('forward-encash')->middleware('verify.tokens')->group(function () {
+    Route::get('/get', [YearEndLeaveController::class, 'checkIfYearEndProcessNeeded']);
+    Route::post('/update', [YearEndLeaveController::class, 'updateYearEndAction']);
+    Route::get('/requests', [YearEndLeaveController::class, 'showApprovalRequests']);
+    Route::post('/response', [YearEndLeaveController::class, 'saveResponseForEncashment']);
+});
+
 Route::middleware('verify.tokens')->group(function () {
     // Fetch all leaves of the authenticated user
     Route::get('/my-leaves', [LeaveRequestController::class, 'userLeaves']);
-    
+
     // Fetch leave status of a specific leave
     Route::get('/my-leaves/{id}/status', [LeaveRequestController::class, 'leaveStatus']);
 });

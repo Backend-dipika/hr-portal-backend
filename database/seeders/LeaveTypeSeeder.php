@@ -14,7 +14,7 @@ class LeaveTypeSeeder extends Seeder
     {
         $leaveTypes = [
             [
-                'name' => 'paid',
+                'name' => 'Paid',
                 'type' => 'Regular',
                 'code' => 'PL',
                 'max_allowed_days' => 30,
@@ -22,28 +22,28 @@ class LeaveTypeSeeder extends Seeder
             ],
 
             [
-                'name' => 'compoff',
+                'name' => 'Compoff',
                 'type' => 'compensatory off',
                 'code' => 'CF',
                 'max_allowed_days' => 10,
                 'is_paid' => true,
             ],
             [
-                'name' => 'unpaid',
+                'name' => 'Unpaid',
                 'type' => 'unpaid leave',
                 'code' => '',
                 'max_allowed_days' => 0, // unlimited (could be treated as no cap)
                 'is_paid' => false,
             ],
             [
-                'name' => 'halfday',
+                'name' => 'Half Day',
                 'type' => 'half day leave',
                 'code' => '',
                 'max_allowed_days' => 30,
                 'is_paid' => true,
             ],
             [
-                'name' => 'maternity',
+                'name' => 'Maternity',
                 'type' => 'maternity leave',
                 'code' => '',
                 'max_allowed_days' => 180,
