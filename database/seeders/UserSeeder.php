@@ -28,13 +28,13 @@ class UserSeeder extends Seeder
                     'last_name' => 'Scott',
                     'office_id' => 'EMP001',
                     'personal_email' => 'michael.personal@example.com',
-                    'office_email' => 'michael.scott@company.com',
+                    'office_email' => 'dipikaepili08@gmail.com',
                     'phone_no' => '9999999901',
                     'alt_phone_no' => null,
                     'role_id' => 1, // Assuming role 1 is CEO or top-level
                     'department_id' => 1,
                     'designation_id' => 1,
-                    'date_of_joining' => '2005-01-01',
+                    'date_of_joining' => '2024-09-29',
                     'date_of_birth' => '1964-03-15',
                     'marital_status' => 'Married',
                     'about' => 'The World\'s Best Boss.',
@@ -59,7 +59,7 @@ class UserSeeder extends Seeder
                     'last_name' => 'Beesly',
                     'office_id' => 'EMP002',
                     'personal_email' => 'pamela.personal@example.com',
-                    'office_email' => 'pamela.beesly@company.com',
+                    'office_email' => 'dipikaepili85@gmail.com',
                     'phone_no' => '9999999902',
                     'alt_phone_no' => null,
                     'role_id' => 2, // Assuming role 2 is Manager
@@ -90,7 +90,7 @@ class UserSeeder extends Seeder
                     'last_name' => 'Halpert',
                     'office_id' => 'EMP003',
                     'personal_email' => 'jim.personal@example.com',
-                    'office_email' => 'jim.halpert@company.com',
+                    'office_email' => 'jrbackend@samsdigital.in',
                     'phone_no' => '9999999903',
                     'alt_phone_no' => null,
                     'role_id' => 3, // Assuming role 3 is Employee

@@ -9,7 +9,8 @@ use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Log;
 
-class LeaveStatusNotification extends Notification implements ShouldQueue
+class LeaveStatusNotification extends Notification 
+// implements ShouldQueue
 {
     use Queueable;
 
