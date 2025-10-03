@@ -1,7 +1,8 @@
 <?php
 
 use App\Http\Controllers\appreciation\AppreciationController;
-use App\Http\Controllers\holiday\holidaysController;
+use App\Http\Controllers\dashboard\DashboardController;
+use App\Http\Controllers\holiday\HolidaysController;
 use App\Http\Controllers\manage_Leaves\LeaveRequestController;
 use App\Http\Controllers\manage_Leaves\LeaveTypeController;
 use App\Http\Controllers\manage_Leaves\YearEndLeaveController;
@@ -58,8 +59,10 @@ Route::prefix('/resign')->middleware('verify.tokens')->group(function () {
 });
 
 Route::prefix('/holidays')->middleware('verify.tokens')->group(function () {
-    Route::post('/add', [holidaysController::class, 'addHolidays']);
-    Route::get('/list', [holidaysController::class, 'showHolidayList']);
+    Route::post('/add', [HolidaysController::class, 'addHolidays']);
+    Route::get('/list', [HolidaysController::class, 'showHolidayList']);
+    Route::delete('/delete/{id}', [HolidaysController::class, 'deleteHoliday']);
+    Route::post('/update', [HolidaysController::class, 'updateHoliday']);
 });
 
 Route::prefix('/appreciation')->middleware('verify.tokens')->group(function () {
@@ -96,6 +99,15 @@ Route::prefix('forward-encash')->middleware('verify.tokens')->group(function () 
     Route::get('/requests', [YearEndLeaveController::class, 'showApprovalRequests']);
     Route::post('/response', [YearEndLeaveController::class, 'saveResponseForEncashment']);
 });
+
+Route::prefix('dashboard')->middleware('verify.tokens')->group(function () {
+    Route::get('/bday-anniversaries', [DashboardController::class, 'showbirthdayAnniversaries']);
+    Route::get('/on-leave', [DashboardController::class, 'showOffThisWeekEmployees']);
+    Route::get('/stats', [DashboardController::class, 'showStatsComponentData']);
+});
+
+
+
 
 Route::middleware('verify.tokens')->group(function () {
     // Fetch all leaves of the authenticated user
