@@ -64,7 +64,10 @@ class HolidaysController extends Controller
         try {
             $currentYear = Carbon::now()->year;
 
-            $holidays = Holidays::whereYear('start_date', $currentYear)->get();
+            $holidays = Holidays::whereYear('start_date', $currentYear)
+                ->orderBy('start_date', 'asc')
+                ->get();
+
 
             return response()->json([
                 'status' => true,
@@ -113,7 +116,7 @@ class HolidaysController extends Controller
 
         $validator = Validator::make($request->all(), [
             'id' => 'required|integer|exists:holidays,id',
-            'date' => 'required|date',
+            'start_date' => 'required|date',
             'name' => 'required|string',
         ]);
         if ($validator->fails()) {
@@ -134,13 +137,13 @@ class HolidaysController extends Controller
                 ], 404);
             }
 
-            $date = Carbon::parse($request->date);
+            $date = Carbon::parse($request->start_date);
             $dayName = $date->format('l');
 
             $holiday->update([
                 'name' => $request->name,
                 'day' => $dayName,
-                'start_date' => $request->date,
+                'start_date' => $request->start_date,
                 'updated_at' => now(),
             ]);
 
