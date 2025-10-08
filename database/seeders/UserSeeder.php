@@ -28,7 +28,7 @@ class UserSeeder extends Seeder
                     'last_name' => 'Scott',
                     'office_id' => 'EMP001',
                     'personal_email' => 'michael.personal@example.com',
-                    'office_email' => 'dipikaepili08@gmail.com',
+                    'office_email' => 'jrbackend@samsdigital.in',
                     'phone_no' => '9999999901',
                     'alt_phone_no' => null,
                     'role_id' => 1, // Assuming role 1 is CEO or top-level
@@ -59,7 +59,7 @@ class UserSeeder extends Seeder
                     'last_name' => 'Beesly',
                     'office_id' => 'EMP002',
                     'personal_email' => 'pamela.personal@example.com',
-                    'office_email' => 'dipikaepili85@gmail.com',
+                    'office_email' => 'backend2@samsdigital.in',
                     'phone_no' => '9999999902',
                     'alt_phone_no' => null,
                     'role_id' => 2, // Assuming role 2 is Manager
@@ -90,7 +90,7 @@ class UserSeeder extends Seeder
                     'last_name' => 'Halpert',
                     'office_id' => 'EMP003',
                     'personal_email' => 'jim.personal@example.com',
-                    'office_email' => 'jrbackend@samsdigital.in',
+                    'office_email' => 'saurabhtidgam1991@gmail.com',
                     'phone_no' => '9999999903',
                     'alt_phone_no' => null,
                     'role_id' => 3, // Assuming role 3 is Employee

@@ -112,6 +112,109 @@ class LeaveRequestController extends Controller
     //     ], 201);
     // }
 
+    // public function store(Request $request)
+    // {
+    //     $validated = $request->validate([
+    //         'leave_type_id' => 'required|integer',
+    //         'start_date'    => 'required|date',
+    //         'end_date'      => 'required|date|after_or_equal:start_date',
+    //         'reason'        => 'nullable|string|max:255',
+    //         'half_day_type' => 'nullable|string|in:first,second',
+    //     ]);
+
+    //     $user = Auth::user();
+
+    //     // ✅ Check duplicate leave request
+    //     $existingLeave = LeaveRequest::where('user_id', $user->id)
+    //         ->where(function ($query) use ($validated) {
+    //             $query->whereBetween('start_date', [$validated['start_date'], $validated['end_date']])
+    //                 ->orWhereBetween('end_date', [$validated['start_date'], $validated['end_date']])
+    //                 ->orWhere(function ($q) use ($validated) {
+    //                     $q->where('start_date', '<=', $validated['start_date'])
+    //                         ->where('end_date', '>=', $validated['end_date']);
+    //                 });
+    //         })
+    //         ->where('status', '!=', 'rejected')
+    //         ->first();
+
+    //     if ($existingLeave) {
+    //         return response()->json([
+    //             'message' => 'You already have a leave request for the selected date(s).'
+    //         ], 400);
+    //     }
+
+    //     // ✅ Calculate total days
+    //     $startDate = new \DateTime($validated['start_date']);
+    //     $endDate   = new \DateTime($validated['end_date']);
+    //     $totalDaysRequested = $endDate->diff($startDate)->days + 1;
+
+    //     $durationType = null;
+
+    //     // ✅ Handle half-day leave
+    //     if ($validated['leave_type_id'] == 4 && !empty($validated['half_day_type'])) {
+    //         $durationType = $validated['half_day_type'] === 'first' ? 'first_half' : 'second_half';
+    //         $totalDaysRequested = 0.5;
+    //     }
+
+    //     // ✅ Create leave request
+    //     $leaveRequest = LeaveRequest::create([
+    //         'user_id'              => $user->id,
+    //         'leave_type_id'        => $validated['leave_type_id'],
+    //         'duration_type'        => $durationType,
+    //         'start_date'           => $validated['start_date'],
+    //         'end_date'             => $validated['end_date'],
+    //         'reason'               => $validated['reason'] ?? null,
+    //         'status'               => 'pending',
+    //         'is_cancel_request'    => false,
+    //         'total_days_requested' => $totalDaysRequested,
+    //         'total_days_approved'  => 0,
+    //     ]);
+
+    //     // ✅ Get Super Admin
+    //     $superAdmin = \App\Models\User::where('role_id', 1)->first();
+
+    //     // ✅ Decide approvers based on who is requesting
+    //     $workflowLevels = [];
+
+    //     if ($user->role_id == 2) {
+    //         // 📌 If requester is Admin → only Super Admin approves
+    //         $workflowLevels = [
+    //             1 => $superAdmin?->id,
+    //         ];
+    //     } else {
+    //         // 📌 Normal User → Super Admin (L1) + Reporting Manager (L2)
+    //         $workflowLevels = [
+    //             1 => $superAdmin?->id,
+    //             2 => $user->reporting_manager_id,
+    //         ];
+    //     }
+
+    //     // ✅ Create approvals
+    //     foreach ($workflowLevels as $level => $approverId) {
+    //         if ($approverId) {
+    //             LeaveApproval::create([
+    //                 'leave_request_id' => $leaveRequest->id,
+    //                 'approver_id'      => $approverId,
+    //                 'level'            => $level,
+    //                 'status'           => 'pending',
+    //                 'action_type'      => 'leave_approval',
+    //             ]);
+
+    //             // Send notification
+    //             $approver = \App\Models\User::find($approverId);
+    //             if ($approver) {
+    //                 $approver->notify(new LeaveApprovalRequestNotification($leaveRequest));
+    //             }
+    //         }
+    //     }
+
+    //     return response()->json([
+    //         'message' => 'Leave request submitted successfully.',
+    //         'data'    => $leaveRequest,
+    //     ], 201);
+    // }
+
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -149,11 +252,13 @@ class LeaveRequestController extends Controller
         $totalDaysRequested = $endDate->diff($startDate)->days + 1;
 
         $durationType = null;
+        $deductionLeaveTypeId = $validated['leave_type_id'];
 
-        // ✅ Handle half-day leave
+        // ✅ Handle half-day leave: always deduct from Paid Leave (id = 1)
         if ($validated['leave_type_id'] == 4 && !empty($validated['half_day_type'])) {
             $durationType = $validated['half_day_type'] === 'first' ? 'first_half' : 'second_half';
             $totalDaysRequested = 0.5;
+            $deductionLeaveTypeId = 1; // Paid Leave
         }
 
         // ✅ Create leave request
@@ -164,7 +269,7 @@ class LeaveRequestController extends Controller
             'start_date'           => $validated['start_date'],
             'end_date'             => $validated['end_date'],
             'reason'               => $validated['reason'] ?? null,
-            'status'               => 'pending',
+            'status'               => 'pending', // Always pending initially
             'is_cancel_request'    => false,
             'total_days_requested' => $totalDaysRequested,
             'total_days_approved'  => 0,
@@ -175,21 +280,18 @@ class LeaveRequestController extends Controller
 
         // ✅ Decide approvers based on who is requesting
         $workflowLevels = [];
-
         if ($user->role_id == 2) {
-            // 📌 If requester is Admin → only Super Admin approves
-            $workflowLevels = [
-                1 => $superAdmin?->id,
-            ];
+            // Admin → only Super Admin approves
+            $workflowLevels = [1 => $superAdmin?->id];
         } else {
-            // 📌 Normal User → Super Admin (L1) + Reporting Manager (L2)
+            // Normal user → Super Admin (L1) + Reporting Manager (L2)
             $workflowLevels = [
                 1 => $superAdmin?->id,
                 2 => $user->reporting_manager_id,
             ];
         }
 
-        // ✅ Create approvals
+        // ✅ Create approval records (all pending)
         foreach ($workflowLevels as $level => $approverId) {
             if ($approverId) {
                 LeaveApproval::create([
@@ -287,31 +389,17 @@ class LeaveRequestController extends Controller
         ], 200);
     }
 
-    /**
-     * Approve a leave request (per level)
-     */
     public function approveLeave(Request $request, $id)
     {
-        Log::info("Starting leave approval process", [
-            'leave_request_id' => $id,
-            'approver_id' => Auth::id()
-        ]);
-
         $leaveRequest = LeaveRequest::findOrFail($id);
         $approver = Auth::user();
-
-        Log::info("Fetched leave request", [
-            'leave_request_id' => $leaveRequest->id,
-            'current_status' => $leaveRequest->status,
-            'request_user_id' => $leaveRequest->user_id
-        ]);
 
         // Prevent approving a leave already finalized
         if (in_array($leaveRequest->status, ['approved', 'rejected'])) {
             return response()->json(['message' => 'Leave already processed.'], 400);
         }
 
-        // The level of the approver must be pre-assigned
+        // Check approver level
         $approval = LeaveApproval::where('leave_request_id', $leaveRequest->id)
             ->where('approver_id', $approver->id)
             ->first();
@@ -329,29 +417,6 @@ class LeaveRequestController extends Controller
         $approval->approved_on = now();
         $approval->save();
 
-        Log::info("LeaveApproval updated to approved", [
-            'approval_id' => $approval->id,
-            'level' => $approval->level,
-            'approved_on' => $approval->approved_on
-        ]);
-
-        // Notify next-level approvers (level < current if hierarchical)
-        $nextLevelApprovals = LeaveApproval::where('leave_request_id', $leaveRequest->id)
-            ->where('level', '<', $approval->level) // notify higher authority after lower level approves
-            ->where('status', 'pending')
-            ->get();
-
-        foreach ($nextLevelApprovals as $nextApproval) {
-            $nextApprover = $nextApproval->approver;
-            if ($nextApprover) {
-                $nextApprover->notify(new LeaveApprovalRequestNotification($leaveRequest));
-                Log::info("Notified next-level approver", [
-                    'next_approver_id' => $nextApprover->id,
-                    'leave_request_id' => $leaveRequest->id
-                ]);
-            }
-        }
-
         // Check if any approvals are still pending
         $anyPending = LeaveApproval::where('leave_request_id', $leaveRequest->id)
             ->where('status', 'pending')
@@ -364,34 +429,46 @@ class LeaveRequestController extends Controller
             ]);
         }
 
-        // All levels approved → finalize leave request
-        $balance = LeaveBalance::where('user_id', $leaveRequest->user_id)
-            ->where('leave_type_id', $leaveRequest->leave_type_id)
-            ->where('year', Carbon::now()->year)
-            ->first();
+        // Final approval → deduct leave balance
+        $deductionLeaveTypeId = in_array($leaveRequest->duration_type, ['first_half', 'second_half'])
+            ? 1  // Always Paid Leave for half-days
+            : $leaveRequest->leave_type_id;
 
-        if (!$balance) {
-            return response()->json(['message' => 'No leave balance found.'], 404);
-        }
+        $year = (int) Carbon::parse($leaveRequest->start_date)->format('Y');
 
-        if ($balance->remaining_days < $leaveRequest->total_days_requested) {
+        $balance = LeaveBalance::firstOrCreate(
+            [
+                'user_id' => $leaveRequest->user_id,
+                'leave_type_id' => $deductionLeaveTypeId,
+                'year' => $year,
+            ],
+            [
+                'total_allocated' => 0,
+                'used_days' => 0,
+                'remaining_days' => 0,
+                'carry_forward_days' => 0
+            ]
+        );
+
+        $daysToDeduct = (float) $leaveRequest->total_days_requested;
+
+        if ($balance->remaining_days < $daysToDeduct) {
             return response()->json(['message' => 'Not enough leave balance.'], 400);
         }
 
-        $balance->used_days += $leaveRequest->total_days_requested;
-        $balance->remaining_days -= $leaveRequest->total_days_requested;
+        $balance->used_days = round($balance->used_days + $daysToDeduct, 2);
+        $balance->remaining_days = round($balance->remaining_days - $daysToDeduct, 2);
         $balance->save();
 
+
+        // Update leave request
         $leaveRequest->status = 'approved';
-        $leaveRequest->total_days_approved = $leaveRequest->total_days_requested;
+        $leaveRequest->total_days_approved = $daysToDeduct;
         $leaveRequest->approved_on = now();
         $leaveRequest->save();
 
+        // Notify user
         $leaveRequest->user->notify(new LeaveStatusNotification($leaveRequest, 'Approved'));
-
-        Log::info("Leave request finalized as approved", [
-            'leave_request_id' => $leaveRequest->id
-        ]);
 
         return response()->json([
             'message' => 'Leave approved successfully.',

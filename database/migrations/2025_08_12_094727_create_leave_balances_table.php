@@ -15,16 +15,19 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('user_id');
             $table->unsignedBigInteger('leave_type_id');
-            $table->year('year'); 
-            $table->integer('total_allocated')->default(0); 
-            $table->integer('used_days')->default(0); 
-            $table->integer('remaining_days')->default(0); 
-            $table->integer('carry_forward_days')->default(0); 
+            $table->year('year');
+
+            // Use decimal for fractional leave days
+            $table->decimal('total_allocated', 5, 2)->default(0);
+            $table->decimal('used_days', 5, 2)->default(0);
+            $table->decimal('remaining_days', 5, 2)->default(0);
+            $table->decimal('carry_forward_days', 5, 2)->default(0);
+
             $table->timestamps();
 
-            //Foreign keys
+            // Foreign keys
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('leave_type_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('leave_type_id')->references('id')->on('leave_types')->onDelete('cascade');
         });
     }
 
