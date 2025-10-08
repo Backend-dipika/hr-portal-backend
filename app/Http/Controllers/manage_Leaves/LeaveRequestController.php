@@ -214,6 +214,36 @@ class LeaveRequestController extends Controller
     //     ], 201);
     // }
 
+    public function leaveSummary(Request $request)
+    {
+        $user = $request->user(); // Authenticated user from token/session
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated'
+            ], 401);
+        }
+
+        // Fetch leave balances with type info
+        $leaveSummary = LeaveBalance::with('leaveType')
+            ->where('user_id', $user->id)
+            ->get()
+            ->map(function ($balance) {
+                return [
+                    'type'     => $balance->leaveType->name ?? 'Unknown',
+                    'available'=> $balance->remaining_days ?? 0,
+                    'annual'   => $balance->total_allocated ?? 0,
+                    'consumed' => $balance->used_days ?? 0,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'leaveSummary' => $leaveSummary
+        ]);
+    }
+
 
 public function store(Request $request)
 {

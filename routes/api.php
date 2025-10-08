@@ -81,6 +81,8 @@ Route::middleware('verify.tokens')->get('/leave-requests', [LeaveRequestControll
 Route::prefix('leave')->middleware('verify.tokens')->group(function () {
     Route::post('/{id}/approve', [LeaveRequestController::class, 'approveLeave'])->name('leave.approve');
     Route::post('/{id}/reject', [LeaveRequestController::class, 'rejectLeave'])->name('leave.reject');
+    Route::get('/summary', [LeaveRequestController::class, 'leaveSummary'])->name('leave.summary');
+
 });
 
 Route::prefix('leave-types')->middleware('verify.tokens')->group(function () {
