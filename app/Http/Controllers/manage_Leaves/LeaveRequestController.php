@@ -595,175 +595,176 @@ public function store(Request $request)
         ]);
     }
 
-    public function index()
-    {
-        // Basic request info
-        Log::info('[leaves.index] called', [
-            'ip' => request()->ip(),
-            'route' => Route::currentRouteName() ?? 'n/a',
-            'method' => request()->method(),
-            'user_agent' => request()->header('User-Agent'),
-            'authorization_present' => request()->header('Authorization') ? true : false,
-        ]);
+public function index()
+{
+    // Basic request info
+    Log::info('[leaves.index] called', [
+        'ip' => request()->ip(),
+        'route' => Route::currentRouteName() ?? 'n/a',
+        'method' => request()->method(),
+        'user_agent' => request()->header('User-Agent'),
+        'authorization_present' => request()->header('Authorization') ? true : false,
+    ]);
 
-        // Auth check
-        $user = Auth::user();
-        if (!$user) {
-            Log::error('[leaves.index] no authenticated user (Auth::user() returned null)');
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthenticated',
-            ], 401);
-        }
+    // Auth check
+    $user = Auth::user();
+    if (!$user) {
+        Log::error('[leaves.index] no authenticated user (Auth::user() returned null)');
+        return response()->json([
+            'success' => false,
+            'message' => 'Unauthenticated',
+        ], 401);
+    }
 
-        Log::info('[leaves.index] authenticated user', [
-            'id' => $user->id ?? null,
-            'email' => $user->email ?? null,
-            'role' => $user->role ?? null,
-        ]);
+    Log::info('[leaves.index] authenticated user', [
+        'id' => $user->id ?? null,
+        'email' => $user->email ?? null,
+        'role' => $user->role ?? null,
+    ]);
 
-        try {
-            // Build base query
-            $query = LeaveRequest::with(['user', 'leaveType', 'approvals'])
-                ->orderBy('created_at', 'desc');
+    try {
+        // Build base query
+        $query = LeaveRequest::with(['user', 'leaveType', 'approvals'])
+            ->orderBy('created_at', 'desc');
 
-            Log::info('[leaves.index] base query prepared (with user, leaveType, approvals)');
+        Log::info('[leaves.index] base query prepared (with user, leaveType, approvals)');
 
-            // Role-based filtering: use the role name, not the object
-            $roleName = $user->role->name ?? null;
+        // Role-based filtering: use the role name
+        $roleName = $user->role->name ?? null;
 
-            if ($roleName === 'Admin') {
-                Log::info('[leaves.index] ROLE = Admin; fetching level 2 pending approvals');
-                $query->whereHas('approvals', function ($q) use ($user) {
-                    $q->where('level', 2)
-                        ->where('approver_id', $user->id);
-                    // ->where('status', 'pending');
-                });
-            } elseif ($roleName === 'Super Admin') {
-                Log::info('[leaves.index] ROLE = Super Admin');
+        if ($roleName === 'Admin') {
+            Log::info('[leaves.index] ROLE = Admin; fetching level 2 pending approvals');
+            $query->whereHas('approvals', function ($q) use ($user) {
+                $q->where('level', 2)
+                  ->where('approver_id', $user->id);
+            });
+        } elseif ($roleName === 'Super Admin') {
+            Log::info('[leaves.index] ROLE = Super Admin');
 
-                $query->whereHas('approvals', function ($q) {
-                    $q->where('level', 1);
-                });
-
-                $query->where(function ($subQuery) {
-                    $subQuery
-                        // Case 1: Normal employees → Super Admin only after Admin (level 2) approved
-                        ->whereHas('approvals', function ($q) {
-                            $q->where('level', 2)->where('status', 'approved');
-                        })
-                        // Case 2: Request made by Admin → show immediately (no level 2 required)
-                        ->orWhereHas('user.role', function ($q) {
-                            $q->where('name', 'Admin');
-                        });
-                });
-            } elseif ($roleName === 'Admin') {
-                Log::info('[leaves.index] ROLE = Reporting Manager; fetching level 1 approvals assigned to RM');
-                $query->whereHas('approvals', function ($q) use ($user) {
-                    $q->where('level', 1)
-                        ->where('approver_id', $user->id);
-                    // ->where('status', 'pending');
-                });
-            } else {
-                Log::warning('[leaves.index] user role not allowed', [
-                    'role' => $roleName,
-                    'user_id' => $user->id,
-                ]);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized to view leave requests',
-                ], 403);
-            }
-
-
-
-
-            // Log SQL and bindings for debugging
-            try {
-                $sql = $query->toSql();
-                $bindings = $query->getBindings();
-                Log::info('[leaves.index] query SQL and bindings', [
-                    'sql' => $sql,
-                    'bindings' => $bindings,
-                ]);
-            } catch (\Throwable $t) {
-                Log::warning('[leaves.index] unable to capture SQL via toSql/getBindings', ['error' => $t->getMessage()]);
-            }
-
-            // Enable query log and execute
-            DB::enableQueryLog();
-            Log::info('[leaves.index] executing query->get() now');
-            $fetched = $query->get();
-
-            $executedQueries = DB::getQueryLog();
-            Log::info('[leaves.index] executed DB queries', [
-                'count' => count($executedQueries),
-                'queries' => $executedQueries,
-            ]);
-
-            Log::info('[leaves.index] fetched rows', ['count' => $fetched->count()]);
-
-            if ($fetched->isEmpty()) {
-                Log::info('[leaves.index] no leave requests returned for this user/role; maybe approvals not yet in the required state');
-            }
-
-            // Format and log each row and approvals
-            $requests = $fetched->map(function ($leave) {
-                Log::info('[leaves.index] formatting leave row', [
-                    'leave_id' => $leave->id,
-                    'user_id' => $leave->user_id,
-                    'status' => $leave->status,
-                    'approvals_count' => $leave->approvals?->count() ?? 0,
-                ]);
-
-                if ($leave->approvals && $leave->approvals->isNotEmpty()) {
-                    foreach ($leave->approvals as $app) {
-                        Log::info('[leaves.index] approval detail', [
-                            'leave_id' => $leave->id,
-                            'approval_id' => $app->id ?? null,
-                            'level' => $app->level ?? null,
-                            'approver_id' => $app->approver_id ?? null,
-                            'status' => $app->status ?? null,
-                            'approved_on' => $app->approved_on ? \Carbon\Carbon::parse($app->approved_on)->format('Y-m-d H:i') : null,
-                        ]);
-                    }
-                }
-
-                return [
-                    'id' => $leave->id,
-                    'employee_name' => trim(($leave->user?->first_name ?? '') . ' ' . ($leave->user?->last_name ?? '')) ?: 'Unknown',
-                    'leave_type' => $leave->leaveType?->name ?? 'N/A',
-                    'duration_type' => $leave->duration_type,
-                    'start_date' => $leave->start_date ? \Carbon\Carbon::parse($leave->start_date)->format('d/m') : null,
-                    'end_date' => $leave->end_date ? \Carbon\Carbon::parse($leave->end_date)->format('d/m') : null,
-                    'reason' => $leave->reason,
-                    'status' => $leave->status,
-                    'total_days_requested' => $leave->total_days_requested,
-                    'total_days_approved' => $leave->total_days_approved,
-                    'created_at' => $leave->created_at ? \Carbon\Carbon::parse($leave->created_at)->format('Y-m-d H:i') : null,
-                ];
+            $query->whereHas('approvals', function ($q) {
+                $q->where('level', 1);
             });
 
-            Log::info('[leaves.index] mapping completed', ['mapped_count' => $requests->count()]);
-
-            return response()->json([
-                'success' => true,
-                'data' => $requests,
-            ], 200);
-        } catch (\Throwable $e) {
-            Log::error('[leaves.index] exception while fetching leaves', [
-                'message' => $e->getMessage(),
-                'exception_class' => get_class($e),
-                'trace' => $e->getTraceAsString(),
+            $query->where(function ($subQuery) {
+                $subQuery
+                    ->whereHas('approvals', function ($q) {
+                        $q->where('level', 2)->where('status', 'approved');
+                    })
+                    ->orWhereHas('user.role', function ($q) {
+                        $q->where('name', 'Admin');
+                    });
+            });
+        } elseif ($roleName === 'Reporting Manager') {
+            Log::info('[leaves.index] ROLE = Reporting Manager; fetching level 1 approvals assigned to RM');
+            $query->whereHas('approvals', function ($q) use ($user) {
+                $q->where('level', 1)
+                  ->where('approver_id', $user->id);
+            });
+        } else {
+            Log::warning('[leaves.index] user role not allowed', [
+                'role' => $roleName,
+                'user_id' => $user->id,
             ]);
-
             return response()->json([
                 'success' => false,
-                'message' => 'Server error while fetching leave requests. Check server logs for details.',
-                'error' => config('app.debug') ? $e->getMessage() : null,
-            ], 500);
+                'message' => 'Unauthorized to view leave requests',
+            ], 403);
         }
+
+        // Log SQL and bindings
+        try {
+            Log::info('[leaves.index] query SQL and bindings', [
+                'sql' => $query->toSql(),
+                'bindings' => $query->getBindings(),
+            ]);
+        } catch (\Throwable $t) {
+            Log::warning('[leaves.index] unable to capture SQL', ['error' => $t->getMessage()]);
+        }
+
+        // Execute query
+        DB::enableQueryLog();
+        Log::info('[leaves.index] executing query->get() now');
+        $fetched = $query->get();
+
+        Log::info('[leaves.index] executed DB queries', [
+            'count' => count(DB::getQueryLog()),
+            'queries' => DB::getQueryLog(),
+        ]);
+
+        Log::info('[leaves.index] fetched rows', ['count' => $fetched->count()]);
+
+        if ($fetched->isEmpty()) {
+            Log::info('[leaves.index] no leave requests returned for this user/role');
+        }
+
+        // Map response including approvals
+        $requests = $fetched->map(function ($leave) {
+            Log::info('[leaves.index] formatting leave row', [
+                'leave_id' => $leave->id,
+                'user_id' => $leave->user_id,
+                'status' => $leave->status,
+                'approvals_count' => $leave->approvals?->count() ?? 0,
+            ]);
+
+            if ($leave->approvals && $leave->approvals->isNotEmpty()) {
+                foreach ($leave->approvals as $app) {
+                    Log::info('[leaves.index] approval detail', [
+                        'leave_id' => $leave->id,
+                        'approval_id' => $app->id ?? null,
+                        'level' => $app->level ?? null,
+                        'approver_id' => $app->approver_id ?? null,
+                        'status' => $app->status ?? null,
+                        'approved_on' => $app->approved_on ? \Carbon\Carbon::parse($app->approved_on)->format('Y-m-d H:i') : null,
+                    ]);
+                }
+            }
+
+            return [
+                'id' => $leave->id,
+                'employee_name' => trim(($leave->user?->first_name ?? '') . ' ' . ($leave->user?->last_name ?? '')) ?: 'Unknown',
+                'leave_type' => $leave->leaveType?->name ?? 'N/A',
+                'duration_type' => $leave->duration_type,
+                'start_date' => $leave->start_date ? \Carbon\Carbon::parse($leave->start_date)->format('d/m') : null,
+                'end_date' => $leave->end_date ? \Carbon\Carbon::parse($leave->end_date)->format('d/m') : null,
+                'reason' => $leave->reason,
+                'status' => $leave->status,
+                'total_days_requested' => $leave->total_days_requested,
+                'total_days_approved' => $leave->total_days_approved,
+                'created_at' => $leave->created_at ? \Carbon\Carbon::parse($leave->created_at)->format('Y-m-d H:i') : null,
+
+                // ⚡ Include approvals for frontend
+                'approvals' => $leave->approvals->map(function ($app) {
+                    return [
+                        'id' => $app->id,
+                        'level' => $app->level,
+                        'approver_id' => $app->approver_id,
+                        'status' => $app->status,
+                        'approved_on' => $app->approved_on ? \Carbon\Carbon::parse($app->approved_on)->format('Y-m-d H:i') : null,
+                    ];
+                }),
+            ];
+        });
+
+        Log::info('[leaves.index] mapping completed', ['mapped_count' => $requests->count()]);
+
+        return response()->json([
+            'success' => true,
+            'data' => $requests,
+        ], 200);
+    } catch (\Throwable $e) {
+        Log::error('[leaves.index] exception while fetching leaves', [
+            'message' => $e->getMessage(),
+            'exception_class' => get_class($e),
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Server error while fetching leave requests. Check server logs for details.',
+            'error' => config('app.debug') ? $e->getMessage() : null,
+        ], 500);
     }
+}
 
 
     /**
