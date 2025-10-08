@@ -2,6 +2,7 @@
 #import designation.graphql
 #import reward.graphql
 #import address.graphql
+#import employementType.graphql
 
 type Employee {
     id: ID!
@@ -44,4 +45,5 @@ type Employee {
             relation: "reportingManager"
             foreignKey: "reporting_manager_id"
         )
+    employeeType: EmployementType
 }

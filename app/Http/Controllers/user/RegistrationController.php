@@ -199,14 +199,15 @@ class RegistrationController extends Controller
 
     public function saveEmploymentDetails(Request $request)
     {
+        Log::info('Employeement Request Data:', $request->all());
         $validator = Validator::make($request->all(), [
             'emp_id' => 'required|exists:users,id',
-            // 'office_id' => 'required|string|max:255|unique:users,office_id',
+            'office_id' => 'nullable|string|max:255|unique:users,office_id',
             // 'office_email' => 'nullable|email|max:255|unique:users,office_email',
-            'department_id' => 'required|exists:departments,id',
-            'designation_id' => 'required|exists:designations,id',
-            'date_of_joining' => 'required|date',
-            'employee_type_id' => 'required|exists:employee_types,id',
+            'department_id' => 'nullable|exists:departments,id',
+            'designation_id' => 'nullable|exists:designations,id',
+            'date_of_joining' => 'nullable|date',
+            'employee_type_id' => 'nullable|exists:employee_types,id',
             'reporting_manager_id' => 'nullable|exists:users,id',
         ]);
         if ($validator->fails()) {

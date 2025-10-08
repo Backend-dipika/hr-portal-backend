@@ -47,6 +47,8 @@ Route::middleware('verify.tokens')->group(function () {
     Route::put('/profile/{id}', [ProfileController::class, 'update'])->name('profile.update');
     Route::get('/get-roles', [ProfileController::class, 'sendRoles']);
     Route::get('/get-departments', [ProfileController::class, 'sendDepartments']);
+    Route::post('/profile-picture/update', [ProfileController::class, 'updateProfilePicture']);
+    Route::delete('/profile-picture/delete', [ProfileController::class, 'deleteProfilePicture']);
 });
 
 

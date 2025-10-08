@@ -9,9 +9,12 @@ use App\Models\Address;
 use App\Models\Department;
 use App\Models\Designation;
 use App\Models\Role;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 class ProfileController extends Controller
@@ -19,7 +22,7 @@ class ProfileController extends Controller
 
     public function sendRoles()
     {
-        $roles = Designation::select('id', 'name','department_id')->get();
+        $roles = Designation::select('id', 'name', 'department_id')->get();
         return response()->json(['roles' => $roles], 200);
     }
     public function sendDepartments()
@@ -93,7 +96,7 @@ class ProfileController extends Controller
                     [
                         'uuid'     => Str::uuid(),
                         'address1' => $request->input('permanent_address1'),
-                        'address1' => $request->input('permanent_address2'),
+                        'address2' => $request->input('permanent_address2'),
                         'city'     => $request->input('permanent_city'),
                         'state'    => $request->input('permanent_state'),
                         'pincode'  => $request->input('permanent_pincode'),
@@ -110,9 +113,8 @@ class ProfileController extends Controller
 
             return response()->json([
                 'message' => 'Profile updated successfully',
-                'user' => $user->load('address'),
+                // 'user' => $user->load('address'),
             ], 200);
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('❌ [Profile Update] Failed to update profile', [
@@ -124,6 +126,102 @@ class ProfileController extends Controller
             return response()->json([
                 'message' => 'Failed to update profile',
                 'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function updateProfilePicture(Request $request)
+    {
+        Log::info('Employeement Request Data:', $request->all());
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|exists:users,id',
+            'profile_photo' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+        try {
+
+            $user = User::find($request->user_id);
+
+            // Delete existing profile picture if exists
+            if ($user->profile_picture && Storage::disk('public')->exists(str_replace('storage/', '', $user->profile_picture))) {
+                Storage::disk('public')->delete(str_replace('storage/', '', $user->profile_picture));
+            }
+
+            // Upload new image
+            $file = $request->file('profile_photo');
+            $path = "user/{$request->user_id}/profile";
+            $filename = $file->getClientOriginalName();
+
+            Storage::disk('public')->putFileAs($path, $file, $filename);
+
+            // Save new file path
+            $file_path = "storage/{$path}/{$filename}";
+            $user->update(['profile_picture' => $file_path]);
+
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Profile Photo saved successfully',
+                'file_path' => $user->profile_picture
+            ]);
+        } catch (Exception $e) {
+            Log::error('Error occurred while saving profile picture', [
+                'message' => $e->getMessage(),
+            ]);
+            return response()->json([
+                'status' => false,
+                'message' => 'Error occurred while saving profile picture',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function deleteProfilePicture(Request $request)
+    {
+        Log::info('Delete Profile Picture Request:', $request->all());
+
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|exists:users,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $user = User::find($request->user_id);
+
+            // Check and delete existing file
+            if ($user->profile_picture && Storage::disk('public')->exists(str_replace('storage/', '', $user->profile_picture))) {
+                Storage::disk('public')->delete(str_replace('storage/', '', $user->profile_picture));
+                $user->update(['profile_picture' => null]);
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'No profile picture found to delete.',
+                    'file_path' => $user->profile_picture
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Profile picture deleted successfully.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error deleting profile picture: ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Something went wrong while deleting profile picture.'
             ], 500);
         }
     }
