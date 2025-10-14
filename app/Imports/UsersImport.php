@@ -9,6 +9,7 @@ use Maatwebsite\Excel\Concerns\ToModel;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
+
 class UsersImport implements ToModel, WithHeadingRow
 {
     /**
@@ -50,7 +51,7 @@ class UsersImport implements ToModel, WithHeadingRow
         Address::create([
             'uuid'      => Str::uuid(),
             'user_id'   => $user->id,
-            'type'      => 'Current', //OnAdhar,Current
+            'type'      => 'current', //permanent,Current
             'address1'  => $row['current_address1'],
             'address2'  => $row['current_address2'] ?? null,
             'city'      => $row['current_city'],
@@ -87,6 +88,10 @@ class UsersImport implements ToModel, WithHeadingRow
                 'country'    => $row['permanent_country'],
             ]);
         }
+
+        $registrationController = new \App\Http\Controllers\user\RegistrationController();
+        $registrationController->addLeaveForNewUser($user->id);
+
 
         return $user;
     }

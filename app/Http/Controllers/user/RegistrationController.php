@@ -8,6 +8,8 @@ use App\Models\Address;
 use App\Models\Department;
 use App\Models\Designation;
 use App\Models\EmployeeType;
+use App\Models\LeaveBalance;
+use App\Models\LeaveType;
 use App\Models\User;
 use App\Models\UserDocuments;
 use Carbon\Carbon;
@@ -116,6 +118,9 @@ class RegistrationController extends Controller
                     'specially_abled' => $request->specially_abled ?? null,
                     'is_disable' => false,
                 ]);
+                // In your controller after creating a user
+                // $user = User::create($request->all());
+                $this->addLeaveForNewUser($user->id);
             }
 
             return response()->json([
@@ -332,6 +337,9 @@ class RegistrationController extends Controller
 
     public function importExcel(Request $request)
     {
+        Log::info('Import Excel Request Data:');
+        Log::info('Import Excel Request Data:', $request->all());
+
         $request->validate([
             'file' => 'required|mimes:xlsx,csv,xls'
         ]);
@@ -347,6 +355,43 @@ class RegistrationController extends Controller
                 'error' => 'Failed to import data.',
                 'details' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    // public function addLeaveForNewUser(){}
+    public function addLeaveForNewUser($userId)
+    {
+        $year = now()->year;
+        $leaveTypes = LeaveType::all();
+
+        foreach ($leaveTypes as $type) {
+            // Skip the old half-day leave type
+            if ($type->id === 4) {
+                continue;
+            }
+
+            // Set default allocation per leave type
+            $total = match ($type->id) {
+                1 => 21,    // Paid Leave
+                2 => 0,   // Comp-off 
+                3 => 365,    // Unpaid Leave
+                5 => 182,   // Maternity Leave
+                default => 0,
+            };
+
+            LeaveBalance::updateOrCreate(
+                [
+                    'user_id' => $userId,
+                    'leave_type_id' => $type->id,
+                    'year' => $year,
+                ],
+                [
+                    'total_allocated' => $total,
+                    'used_days' => 0,
+                    'remaining_days' => $total,
+                    'carry_forward_days' => 0,
+                ]
+            );
         }
     }
 }

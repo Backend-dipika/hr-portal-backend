@@ -29,8 +29,8 @@ class LeaveBalanceSeeder extends Seeder
                 // Set default allocation per leave type
                 $total = match ($type->id) {
                     1 => 21,    // Paid Leave
-                    2 => 365,   // Unpaid Leave (treated as "infinite")
-                    3 => 0,     // Comp-off
+                    2 => 0,   // Unpaid Leave (treated as "infinite")
+                    3 => 365,     // Comp-off
                     5 => 182,   // Maternity Leave
                     default => 0,
                 };
