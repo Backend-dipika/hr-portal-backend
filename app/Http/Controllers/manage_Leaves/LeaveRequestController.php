@@ -17,35 +17,48 @@ use Illuminate\Support\Facades\Route;
 
 class LeaveRequestController extends Controller
 {
-    public function leaveSummary(Request $request)
-    {
-        $user = $request->user(); // Authenticated user from token/session
+public function leaveSummary(Request $request)
+{
+    Log::channel('daily')->info("📌 leaveSummary called");
 
-        if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthenticated'
-            ], 401);
-        }
-
-        // Fetch leave balances with type info
-        $leaveSummary = LeaveBalance::with('leaveType')
-            ->where('user_id', $user->id)
-            ->get()
-            ->map(function ($balance) {
-                return [
-                    'type'     => $balance->leaveType->name ?? 'Unknown',
-                    'available' => $balance->remaining_days ?? 0,
-                    'annual'   => $balance->total_allocated ?? 0,
-                    'consumed' => $balance->used_days ?? 0,
-                ];
-            });
-
-        return response()->json([
-            'success' => true,
-            'leaveSummary' => $leaveSummary
-        ]);
+    // Step 1: Get authenticated user
+    $user = Auth::user();
+    if (!$user) {
+        Log::channel('daily')->warning("⚠️ leaveSummary: Unauthenticated access");
+        return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
     }
+    Log::channel('daily')->info("👤 Authenticated user", ['user_id' => $user->id, 'role' => $user->role->name]);
+
+    // Step 2: Determine employee ID to fetch (prioritize query param)
+    $employeeId = $request->query('employee_id') ?? $user->id;
+    Log::channel('daily')->info("📌 Employee ID to fetch leave summary", ['employee_id' => $employeeId]);
+
+    // Step 3: Fetch leave balances
+    $leaveBalances = LeaveBalance::with('leaveType')
+        ->where('user_id', $employeeId)
+        ->get();
+    Log::channel('daily')->info("📌 Fetched leave balances count", ['count' => $leaveBalances->count()]);
+
+    // Step 4: Map balances into structured array
+    $leaveSummary = $leaveBalances->map(function ($balance) {
+        $mapped = [
+            'type' => $balance->leaveType->name ?? 'Unknown',
+            'available' => $balance->remaining_days ?? 0,
+            'annual' => $balance->total_allocated ?? 0,
+            'consumed' => $balance->used_days ?? 0,
+        ];
+        Log::channel('daily')->info("📄 Leave balance mapped", $mapped);
+        return $mapped;
+    });
+
+    // Step 5: Log final summary before returning
+    Log::channel('daily')->info("✅ Final leave summary prepared", ['summary' => $leaveSummary]);
+
+    return response()->json([
+        'success' => true,
+        'leaveSummary' => $leaveSummary,
+    ]);
+}
 
 
     public function store(Request $request)
@@ -594,43 +607,46 @@ class LeaveRequestController extends Controller
     }
 
 
-    /**
-     * List leave requests of the authenticated user
-     */
-    public function userLeaves()
-    {
-        $user = Auth::user();
-
-        $leaves = LeaveRequest::with(['leaveType', 'approvals.approver'])
-            ->where('user_id', $user->id)
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($leave) {
-                return [
-                    'id' => $leave->id,
-                    'leave_type' => $leave->leaveType?->name ?? 'N/A',
-                    'start_date' => Carbon::parse($leave->start_date)->format('Y-m-d'),
-                    'end_date' => Carbon::parse($leave->end_date)->format('Y-m-d'),
-                    'reason' => $leave->reason,
-                    'status' => $leave->status,
-                    'total_days_requested' => $leave->total_days_requested,
-                    'total_days_approved' => $leave->total_days_approved,
-                    'approvals' => $leave->approvals->map(function ($approval) {
-                        return [
-                            'level' => $approval->level,
-                            'approver_name' => trim(($approval->approver?->first_name ?? '') . ' ' . ($approval->approver?->last_name ?? '')) ?: 'Pending',
-                            'status' => $approval->status,
-                            'approved_on' => $approval->approved_on ? Carbon::parse($approval->approved_on)->format('Y-m-d H:i') : null,
-                        ];
-                    })->sortBy('level')->values(),
-                ];
-            });
-
-        return response()->json([
-            'success' => true,
-            'data' => $leaves,
-        ]);
+public function userLeaves(Request $request)
+{
+    $user = Auth::user();
+    if (!$user) {
+        return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
     }
+
+    // Use query param only if admin or super admin
+    $employeeId = $user->role->name === 'Admin' || $user->role->name === 'Super Admin'
+        ? $request->query('employee_id') ?? $user->id
+        : $user->id;
+
+    $leaves = LeaveRequest::with(['leaveType', 'approvals.approver'])
+        ->where('user_id', $employeeId)
+        ->orderBy('created_at', 'desc')
+        ->get()
+        ->map(function ($leave) {
+            return [
+                'id' => $leave->id,
+                'leave_type' => $leave->leaveType?->name ?? 'N/A',
+                'start_date' => Carbon::parse($leave->start_date)->format('Y-m-d'),
+                'end_date' => Carbon::parse($leave->end_date)->format('Y-m-d'),
+                'reason' => $leave->reason,
+                'status' => $leave->status,
+                'total_days_requested' => $leave->total_days_requested,
+                'total_days_approved' => $leave->total_days_approved,
+                'approvals' => $leave->approvals->map(function ($approval) {
+                    return [
+                        'level' => $approval->level,
+                        'approver_name' => trim(($approval->approver?->first_name ?? '') . ' ' . ($approval->approver?->last_name ?? '')) ?: 'Pending',
+                        'status' => $approval->status,
+                        'approved_on' => $approval->approved_on ? Carbon::parse($approval->approved_on)->format('Y-m-d H:i') : null,
+                    ];
+                })->sortBy('level')->values(),
+            ];
+        });
+
+    return response()->json(['success' => true, 'data' => $leaves]);
+}
+
 
     /**
      * Show status of a single leave request for authenticated user
