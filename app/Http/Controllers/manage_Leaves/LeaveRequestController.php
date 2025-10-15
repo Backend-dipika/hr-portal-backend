@@ -629,6 +629,7 @@ public function userLeaves(Request $request)
                 'leave_type' => $leave->leaveType?->name ?? 'N/A',
                 'start_date' => Carbon::parse($leave->start_date)->format('Y-m-d'),
                 'end_date' => Carbon::parse($leave->end_date)->format('Y-m-d'),
+                'applied_on' => Carbon::parse($leave->created_at)->format('Y-m-d'), // ← only date
                 'reason' => $leave->reason,
                 'status' => $leave->status,
                 'total_days_requested' => $leave->total_days_requested,
