@@ -239,12 +239,12 @@ class RegistrationController extends Controller
                 'message' => 'Employment details saved successfully',
             ]);
         } catch (Exception $e) {
-            Log::error('Error occurred while saving Address Info', [
+            Log::error('Error occurred while saving Employeement Details', [
                 'message' => $e->getMessage(),
             ]);
             return response()->json([
                 'status' => false,
-                'message' => 'Error occurred while saving Address Info',
+                'message' => 'Error occurred while saving Employeement Details',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -294,12 +294,12 @@ class RegistrationController extends Controller
                 'message' => 'Documnets saved successfully',
             ], 200);
         } catch (Exception $e) {
-            Log::error('Error occurred while saving Address Info', [
+            Log::error('Error occurred while saving documnets', [
                 'message' => $e->getMessage(),
             ]);
             return response()->json([
                 'status' => false,
-                'message' => 'Error occurred while saving Address Info',
+                'message' => 'Error occurred while saving documnets',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -370,14 +370,14 @@ class RegistrationController extends Controller
                 continue;
             }
 
-            // Set default allocation per leave type
-            $total = match ($type->id) {
-                1 => 21,    // Paid Leave
-                2 => 0,   // Comp-off 
-                3 => 365,    // Unpaid Leave
-                5 => 182,   // Maternity Leave
-                default => 0,
-            };
+            // // Set default allocation per leave type
+            // $total = match ($type->id) {
+            //     1 => 21,    // Paid Leave
+            //     2 => 0,   // Comp-off 
+            //     3 => 365,    // Unpaid Leave
+            //     5 => 182,   // Maternity Leave
+            //     default => 0,
+            // };
 
             LeaveBalance::updateOrCreate(
                 [
@@ -386,9 +386,9 @@ class RegistrationController extends Controller
                     'year' => $year,
                 ],
                 [
-                    'total_allocated' => $total,
+                    'total_allocated' => $type->max_allowed_days,
                     'used_days' => 0,
-                    'remaining_days' => $total,
+                    'remaining_days' => $type->max_allowed_days,
                     'carry_forward_days' => 0,
                 ]
             );

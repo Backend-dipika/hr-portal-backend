@@ -5,12 +5,14 @@ namespace App\Http\Controllers\user;
 use App\Http\Controllers\Controller;
 use App\Models\otp;
 use App\Models\User;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Facades\JWTFactory;
+use Illuminate\Support\Facades\Http;
 
 class AuthController extends Controller
 {
@@ -37,18 +39,45 @@ class AuthController extends Controller
     public function sendSms($user)
     {
         $otp = rand(1000, 9999);
-        otp::where('user_id', $user->id)->delete();
-        otp::create([
-            'phone_number' => $user->phone_no,
-            'otp' => $otp,
-            'is_used' => false,
-            'expires_at' => now()->addMinutes(5),
-            'user_id' => $user->id,
-        ]);
-        Log::info("OTP for {$user->phoneNo}: $otp");
-        // integrate SMS gateway here (e.g., Twilio)
+        // $message = "Welcome to SAMS Digital HRMS ! Your verification code is {$otp}. It will only be valid till 5 minutes. Do not share your OTP with anyone for security reasons - SAMS DIGITAL";
+        // //now
+        $message = "Welcome to SAMS Digital HRMS ! Your verification code is {$otp}. It will only be valid till 5 minutes. Do not share your OTP with anyone for security reasons - SAMS DIGITAL";
+
+        // integrate SMS gateway here (e.g., Digimiles)
+        try {
+            otp::where('user_id', $user->id)->delete();
+            otp::create([
+                'phone_number' => $user->phone_no,
+                'otp' => $otp,
+                'is_used' => false,
+                'expires_at' => now()->addMinutes(5),
+                'user_id' => $user->id,
+            ]);
+            Log::info("OTP for {$user->phoneNo}: $otp");
+            $apiUrl   = config('services.sms.api_url');
+            $apiKey   = config('services.sms.api_key');
+            $senderId = config('services.sms.sender_id');
+            Log::info("Using SMS API URL: " . $apiUrl);          
+            Log::info("Using SMS API key: " . $apiKey);
+            Log::info("Using SMS sender Id: " . $senderId);
+
+            $response = Http::get($apiUrl, [
+                'apikey' => $apiKey,
+                'type'   => 'TRANS',
+                'text'   => $message,
+                'to'     => $user->phone_no,
+                'sender' => $senderId
+            ]);
+
+            Log::info("SMS API response: " . $response);
+
+            return response()->json($response);
+        } catch (Exception $e) {
+            Log::info(" Error in sendOtp method" . $e->getMessage());
+        }
         return;
     }
+
     public function verifyOtp(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -175,28 +204,6 @@ class AuthController extends Controller
         }
     }
 
-    // public function refreshToken(Request $request)
-    // {
-    //     $refreshToken = $request->cookie('refresh_token'); // Get refresh token from cookie
-
-    //     try {
-    //         // Load the refresh token
-    //         JWTAuth::setToken($refreshToken);
-
-    //         // Generate a new access token
-    //         $newAccessToken = JWTAuth::refresh();
-
-    //         // Optional: get the user for any further operations
-    //         // $user = JWTAuth::setToken($newAccessToken)->toUser();
-
-    //         // Return new access token in cookie
-    //         return response()->json(['data' => 'Token refreshed'])
-    //             ->cookie('access_token', $newAccessToken, 15, null, null, true, true);
-    //     } catch (\Exception $e) {
-    //         return response()->json(['error' => 'Invalid refresh token'], 500);
-    //     }
-    // }
-
     public function logout(Request $request)
     {
         try {
@@ -213,15 +220,6 @@ class AuthController extends Controller
         }
     }
 
-
-    // public function sendUserDetails(Request $request)
-    // {
-    //     $user = $request->user();
-    //     return response()->json([
-    //         'id' => $user->id,
-    //         'role' => $user->role_id
-    //     ], 200);
-    // }
     public function sendUserDetails(Request $request)
     {
         try {

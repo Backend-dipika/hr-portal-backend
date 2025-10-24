@@ -17,7 +17,7 @@ class LeaveTypeSeeder extends Seeder
                 'name' => 'Paid',
                 'type' => 'Regular',
                 'code' => 'PL',
-                'max_allowed_days' => 30,
+                'max_allowed_days' => 21,
                 'is_paid' => true,
             ],
 
@@ -25,14 +25,14 @@ class LeaveTypeSeeder extends Seeder
                 'name' => 'Compoff',
                 'type' => 'compensatory off',
                 'code' => 'CF',
-                'max_allowed_days' => 10,
+                'max_allowed_days' => 0,
                 'is_paid' => true,
             ],
             [
                 'name' => 'Unpaid',
                 'type' => 'unpaid leave',
                 'code' => '',
-                'max_allowed_days' => 0, // unlimited (could be treated as no cap)
+                'max_allowed_days' => 360, // unlimited (could be treated as no cap)
                 'is_paid' => false,
             ],
             [
@@ -46,7 +46,7 @@ class LeaveTypeSeeder extends Seeder
                 'name' => 'Maternity',
                 'type' => 'maternity leave',
                 'code' => '',
-                'max_allowed_days' => 180,
+                'max_allowed_days' => 182,
                 'is_paid' => true,
             ],
 

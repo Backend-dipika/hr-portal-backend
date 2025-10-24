@@ -14,4 +14,9 @@ class UserDocuments extends Model
         'experience_letter',
         'salary_slip',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

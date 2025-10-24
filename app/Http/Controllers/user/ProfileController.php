@@ -9,6 +9,7 @@ use App\Models\Address;
 use App\Models\Department;
 use App\Models\Designation;
 use App\Models\Role;
+use App\Models\UserDocuments;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -181,7 +182,6 @@ class ProfileController extends Controller
             ], 500);
         }
     }
-
     public function deleteProfilePicture(Request $request)
     {
         Log::info('Delete Profile Picture Request:', $request->all());
@@ -222,6 +222,187 @@ class ProfileController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'Something went wrong while deleting profile picture.'
+            ], 500);
+        }
+    }
+
+    public function getUserDocuments($id)
+    {
+        try {
+            $user = User::with('document')->findOrFail($id);
+
+            return response()->json([
+                'status' => true,
+                'documents' => $user->document, // Only return the document relation
+            ]);
+        } catch (Exception $e) {
+            Log::error('Error fetching documents for user ID ' . $id . ': ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Error fetching documents',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    // public function updateDocuments(Request $request)
+    // {
+    //     Log::info('update Documents Request:', $request->all());
+
+    //     $validator = Validator::make($request->all(), [
+    //         'user_id' => 'required|exists:users,id',
+    //         'document_name' => 'required|string',
+    //         'option' => 'required|in:update,delete',
+    //         'file' => 'nullable|file',
+    //     ]);
+
+    //     if ($validator->fails()) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'Validation failed',
+    //             'errors' => $validator->errors()
+    //         ], 422);
+    //     }
+
+    //     try {
+    //         $userDocument = UserDocuments::where('user_id', $request->user_id)
+    //             ->where('document_name', $request->document_name)
+    //             ->first();
+
+    //         if (!$userDocument) {
+    //             return response()->json([
+    //                 'status' => false,
+    //                 'message' => 'Document not found.'
+    //             ], 404);
+    //         }
+
+    //         // if ($request->option === 'delete') {
+    //         // Delete file from storage if exists
+    //         if ($userDocument->file_path && Storage::disk('public')->exists(str_replace('storage/', '', $userDocument->file_path))) {
+    //             Storage::disk('public')->delete(str_replace('storage/', '', $userDocument->file_path));
+    //         }
+    //         $userDocument->delete();
+
+    //         // }
+
+    //         if ($request->option === 'update') {
+    //             $filePath = $userDocument->file_path; // Keep existing if no new file
+
+    //             if ($request->hasFile('file')) {
+    //                 $file = $request->file('file');
+    //                 $path = "user/{$request->user_id}";
+    //                 $filename = $file->getClientOriginalName();
+
+    //                 // Delete old file if exists
+    //                 if ($filePath && Storage::disk('public')->exists(str_replace('storage/', '', $filePath))) {
+    //                     Storage::disk('public')->delete(str_replace('storage/', '', $filePath));
+    //                 }
+
+    //                 // Store new file
+    //                 Storage::disk('public')->putFileAs($path, $file, $filename);
+    //                 $filePath = "storage/{$path}/{$filename}";
+    //             }
+
+    //             // Update DB
+    //             $userDocument->update([
+    //                 'document_name' => $request->document_name,
+    //                 'file_path' => $filePath,
+    //             ]);
+    //         }
+    //         return response()->json([
+    //             'status' => true,
+    //             'message' => 'Document updated successfully.',
+    //             'file_path' => $filePath
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         Log::error('Error updating/deleting document: ' . $e->getMessage());
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'Something went wrong.'
+    //         ], 500);
+    //     }
+    // }
+
+    public function updateDocuments(Request $request)
+    {
+        Log::info('update Documents Request:', $request->all());
+
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|exists:users,id',
+            'document_name' => 'required|in:adhar_card,pan_card,certificate,experience_letter,salary_slip',
+            'option' => 'required|in:update,delete',
+            'file' => 'nullable|file',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $documentField = $request->document_name; // e.g. 'adhar_card'
+
+            $userDocument = UserDocuments::where('user_id', $request->user_id)->first();
+
+            if (!$userDocument) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Document record not found for this user.'
+                ], 404);
+            }
+
+            $existingFilePath = $userDocument->$documentField;
+
+            // Handle delete
+            if ($request->option === 'delete') {
+                if ($existingFilePath && Storage::disk('public')->exists(str_replace('storage/', '', $existingFilePath))) {
+                    Storage::disk('public')->delete(str_replace('storage/', '', $existingFilePath));
+                }
+
+                $userDocument->update([$documentField => null]);
+
+                return response()->json([
+                    'status' => true,
+                    'message' => ucfirst(str_replace('_', ' ', $documentField)) . ' deleted successfully.',
+                ]);
+            }
+
+            // Handle update
+            if ($request->option === 'update') {
+                $filePath = $existingFilePath;
+
+                if ($request->hasFile('file')) {
+                    $file = $request->file('file');
+                    $path = "user/{$request->user_id}";
+                    $filename = $file->getClientOriginalName();
+
+                    // Delete old file if exists
+                    if ($existingFilePath && Storage::disk('public')->exists(str_replace('storage/', '', $existingFilePath))) {
+                        Storage::disk('public')->delete(str_replace('storage/', '', $existingFilePath));
+                    }
+
+                    // Store new file
+                    Storage::disk('public')->putFileAs($path, $file, $filename);
+                    $filePath = "storage/{$path}/{$filename}";
+                }
+
+                $userDocument->update([
+                    $documentField => $filePath
+                ]);
+
+                return response()->json([
+                    'status' => true,
+                    'message' => ucfirst(str_replace('_', ' ', $documentField)) . ' updated successfully.',
+                    'file_path' => $filePath
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error updating/deleting document: ' . $e->getMessage());
+            return response()->json([
+                'status' => false,
+                'message' => 'Something went wrong.'
             ], 500);
         }
     }

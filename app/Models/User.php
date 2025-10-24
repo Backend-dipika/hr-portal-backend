@@ -141,4 +141,9 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->hasOne(LeaveBalance::class, 'user_id');
     }
+
+     public function document()
+    {
+        return $this->hasOne(UserDocuments::class, 'user_id');
+    }
 }

@@ -49,7 +49,10 @@ Route::middleware('verify.tokens')->group(function () {
     Route::get('/get-departments', [ProfileController::class, 'sendDepartments']);
     Route::post('/profile-picture/update', [ProfileController::class, 'updateProfilePicture']);
     Route::delete('/profile-picture/delete', [ProfileController::class, 'deleteProfilePicture']);
+    Route::get('user-documents/{id}', [ProfileController::class, 'getUserDocuments']);
+    Route::post('user-documents/update', [ProfileController::class, 'updateDocuments']);
 });
+
 
 
 Route::prefix('/resign')->middleware('verify.tokens')->group(function () {
