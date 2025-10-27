@@ -16,7 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id');
             $table->year('year');
             $table->enum('action_type', ['encash', 'carry_forward'])->nullable();
-            $table->integer('days')->default(0);
+            $table->decimal('days', 8, 2)->default(0.00); 
             $table->date('processed_on')->nullable();
             $table->string('remarks')->nullable();
 

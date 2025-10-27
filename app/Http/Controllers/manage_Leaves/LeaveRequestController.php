@@ -325,19 +325,23 @@ class LeaveRequestController extends Controller
 
         $year = (int) Carbon::parse($leaveRequest->start_date)->format('Y');
 
-        $balance = LeaveBalance::firstOrCreate(
-            [
-                'user_id' => $leaveRequest->user_id,
-                'leave_type_id' => $deductionLeaveTypeId,
-                'year' => $year,
-            ],
-            [
-                'total_allocated' => 0,
-                'used_days' => 0,
-                'remaining_days' => 0,
-                'carry_forward_days' => 0
-            ]
-        );
+        // $balance = LeaveBalance::firstOrCreate(
+        //     [
+        //         'user_id' => $leaveRequest->user_id,
+        //         'leave_type_id' => $deductionLeaveTypeId,
+        //         'year' => $year,
+        //     ],
+        //     [
+        //         'total_allocated' => 0,
+        //         'used_days' => 0,
+        //         'remaining_days' => 0,
+        //         'carry_forward_days' => 0
+        //     ]
+        // );
+        $balance= LeaveBalance::where('user_id', $leaveRequest->user_id)
+            ->where('leave_type_id', $deductionLeaveTypeId)
+            ->where('year', $year)
+            ->first();
 
         $daysToDeduct = (float) $leaveRequest->total_days_requested;
 

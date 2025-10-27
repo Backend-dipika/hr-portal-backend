@@ -63,6 +63,7 @@ class YearEndLeaveController extends Controller
             if ($request->option == 'carry_forward') {
                 LeaveBalance::where('user_id', $leaveYearEndAction->user_id)
                     ->where('year', $currentYear)
+                    ->where('leave_type_id', 1)
                     ->update([
                         'carry_forward_days' => $leaveYearEndAction->days,
                         'total_allocated' => LeaveBalance::raw('total_allocated + ' . $leaveYearEndAction->days),
@@ -139,6 +140,7 @@ class YearEndLeaveController extends Controller
 
                 LeaveBalance::where('user_id', $leaveYearEndAction->user_id)
                     ->where('year', $currentYear)
+                    ->where('leave_type_id', 1)
                     ->update([
                         'carry_forward_days' => $leaveYearEndAction->days,
                         'total_allocated' => LeaveBalance::raw('total_allocated + ' . $leaveYearEndAction->days),
