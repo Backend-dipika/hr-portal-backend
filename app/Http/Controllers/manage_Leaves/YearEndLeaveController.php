@@ -5,6 +5,9 @@ namespace App\Http\Controllers\manage_Leaves;
 use App\Http\Controllers\Controller;
 use App\Models\LeaveBalance;
 use App\Models\LeaveYearEndAction;
+use App\Models\User;
+use App\Notifications\EncashmentRequestNotification;
+use App\Notifications\EncashmentStatusNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -86,6 +89,15 @@ class YearEndLeaveController extends Controller
                         'action_type' => $request->option,
                         'status' => 'pending'
                     ]);
+
+                $employee = User::select('first_name', 'last_name')
+                    ->where('id', $leaveYearEndAction->user_id)
+                    ->first();
+
+                $employeeName = trim($employee->first_name . ' ' . $employee->last_name);
+
+                $admin = User::where('role_id', 1)->first();
+                $admin->notify(new EncashmentRequestNotification($employeeName));
             }
             return response()->json(['status' => 'success', 'message' => 'Year-end action updated successfully.'], 200);
         } catch (\Exception $e) {
@@ -134,10 +146,28 @@ class YearEndLeaveController extends Controller
                 'approval_date' => now(),
                 'status' => $request->action
             ]);
-
+            $currentYear = now()->year;
             if ($request->action == 'approved') {
-                $currentYear = now()->year;
 
+
+                // LeaveBalance::where('user_id', $leaveYearEndAction->user_id)
+                //     ->where('year', $currentYear)
+                //     ->where('leave_type_id', 1)
+                //     ->update([
+                //         'carry_forward_days' => $leaveYearEndAction->days,
+                //         'total_allocated' => LeaveBalance::raw('total_allocated + ' . $leaveYearEndAction->days),
+                //         'remaining_days' => LeaveBalance::raw('remaining_days + ' . $leaveYearEndAction->days)
+                //     ]);
+                $leaveYearEndAction->update([
+                    'is_closed' => true,
+                    // 'remarks' => $request->remarks,
+                    'approval_date' => now(),
+                    // 'action_type' => $request->option,
+                    'status' => 'approved'
+                ]);
+                $employee = User::where('id', $leaveYearEndAction->user_id)->first();
+                $employee->notify(new EncashmentStatusNotification('approved', $request->amount));
+            } else {
                 LeaveBalance::where('user_id', $leaveYearEndAction->user_id)
                     ->where('year', $currentYear)
                     ->where('leave_type_id', 1)
@@ -146,6 +176,15 @@ class YearEndLeaveController extends Controller
                         'total_allocated' => LeaveBalance::raw('total_allocated + ' . $leaveYearEndAction->days),
                         'remaining_days' => LeaveBalance::raw('remaining_days + ' . $leaveYearEndAction->days)
                     ]);
+                $leaveYearEndAction->update([
+                    'is_closed' => true,
+                    // 'remarks' => $request->remarks,
+                    'approval_date' => now(),
+                    // 'action_type' => $request->option,
+                    'status' => 'rejected'
+                ]);
+                $employee = User::where('id', $leaveYearEndAction->user_id)->first();
+                $employee->notify(new EncashmentStatusNotification('rejected', $request->amount));
             }
             return response()->json(['status' => 'success', 'message' => 'Year-end action updated successfully.'], 200);
         } catch (\Exception $e) {

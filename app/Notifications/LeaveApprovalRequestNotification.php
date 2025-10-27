@@ -43,7 +43,7 @@ class LeaveApprovalRequestNotification extends Notification
             ->line('Dates: ' . $this->leaveRequest->start_date . ' to ' . $this->leaveRequest->end_date)
             ->line('Reason: ' . ($this->leaveRequest->reason ?: 'N/A'))
             // ->action('Review Request', url('/leave-approvals/' . $this->leaveRequest->id))
-            ->action('Review Request', 'http://localhost:5173/')
+            ->action('Review Request', 'http://localhost:5173/') //url('/')
             ->line('Please review and take action.');
     }
 

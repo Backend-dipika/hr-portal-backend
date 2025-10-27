@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\ResignationRequest;
 use App\Models\ResignationRequestApproval;
 use App\Models\User;
+use App\Notifications\ResignationSentNotification;
+use App\Notifications\ResignationStatusNotification;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
@@ -138,21 +140,40 @@ class ResignationController extends Controller
                 $approvers = [
                     [
                         'id' => $user->reporting_manager_id, // Default to 1 if no manager
-                        'order' => 1,//manger
+                        'order' => 1, //manger
                     ],
                     [
                         'id' => 1, //CEO ID is 1
-                        'order' => 2,//ceo
+                        'order' => 2, //ceo
                     ],
                 ];
             } else {
                 $approvers = [
                     [
                         'id' => 1, //CEO ID is 1
-                        'order' => 1,//ceo if manger has applied 
+                        'order' => 1, //ceo if manger has applied 
                     ],
                 ];
             }
+
+            if ($user->reporting_manager_id) {
+                $manger = User::find($user->reporting_manager_id);
+                $manger->notify(new ResignationSentNotification(
+                    $user->first_name . ' ' . $user->last_name,
+                    $user->personal_email,
+                    $request->expected_last_working_date,
+                    $request->message
+                ));
+            } else {
+                $ceo = User::find(1);
+                $ceo->notify(new ResignationSentNotification(
+                    $user->first_name . ' ' . $user->last_name,
+                    $user->personal_email,
+                    $request->expected_last_working_date,
+                    $request->message
+                ));
+            }
+            //   $manger= User::find($request->user_id)
 
 
             foreach ($approvers as $approver) {
@@ -168,6 +189,9 @@ class ResignationController extends Controller
 
             User::find($request->user_id)
                 ->update(['sepration_status' => 'resigned']);
+
+
+
 
             return response()->json([
                 'status' => true,
@@ -206,6 +230,15 @@ class ResignationController extends Controller
                 ->where('approval_order', $request->approval_order)
                 ->update(['approval_status' => $request->action, 'approval_date' => Carbon::now(),]);
 
+            $employee = User::find($request->employee_id);
+            
+                    // $ceo = User::find(1);
+                    // $ceo->notify(new ResignationSentNotification(
+                    //     $ceo->first_name . ' ' . $ceo->last_name,
+                    //     $ceo->personal_email,
+                    //     $request->expected_last_working_date,
+                    //     $request->message
+                    // )); 
             if ($request->action === 'approved') {
 
                 $isSecond = ResignationRequestApproval::where('resignation_request_id', $request->resignation_id)
@@ -214,7 +247,27 @@ class ResignationController extends Controller
                 if ($isSecond && $request->approval_order == 1) {
                     // Manager approved → unlock CEO row (set to pending)
                     $isSecond->update(['approval_status' => 'pending']);
+                     $ceo = User::find(1);
+                    $ceo->notify(new ResignationSentNotification(
+                        $employee->first_name . ' ' . $employee->last_name,
+                        $employee->personal_email,
+                        $request->expected_last_working_date,
+                        $request->message
+                    )); 
+
                 } else {
+                    // ResignationRequest::where('id', $request->resignation_id)
+                    //     ->update(['final_status' => 'approved']);
+
+                    // User::where('id', $request->employee_id)
+                    //     ->update([
+                    //         'sepration_status' => 'resigned',
+                    //         'sepration_date' => Carbon::now()->addMonths(3)
+                    //     ]);
+                // }
+
+                // // Only CEO (order 2) finalizes approval
+                // if ($request->approval_order == 2) {
                     ResignationRequest::where('id', $request->resignation_id)
                         ->update(['final_status' => 'approved']);
 
@@ -225,17 +278,14 @@ class ResignationController extends Controller
                         ]);
                 }
 
-                // Only CEO (order 2) finalizes approval
-                if ($request->approval_order == 2) {
-                    ResignationRequest::where('id', $request->resignation_id)
-                        ->update(['final_status' => 'approved']);
 
-                    User::where('id', $request->employee_id)
-                        ->update([
-                            'sepration_status' => 'resigned',
-                            'sepration_date' => Carbon::now()->addMonths(3)
-                        ]);
-                }
+                // APPROVED mail
+                $employee->notify(new ResignationStatusNotification(
+                    $employee->first_name . ' ' . $employee->last_name,
+                    'approved',
+                    null,
+                    $employee->sepration_date
+                ));
             } else {
                 // If rejected → mark final status immediately
                 ResignationRequest::where('id', $request->resignation_id)
@@ -243,6 +293,13 @@ class ResignationController extends Controller
 
                 User::where('id', $request->employee_id)
                     ->update(['sepration_status' => 'reversed']);
+
+                $employee->notify(new ResignationStatusNotification(
+                    $employee->first_name . ' ' . $employee->last_name,
+                    'rejected',
+                    'Your resignation cannot be accepted.
+                    Futher discussion will be done with your respected lead and shivanand sir.'
+                ));
             }
 
             return response()->json([
