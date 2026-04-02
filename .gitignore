@@ -22,3 +22,8 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+.scribe/endpoints.cache/00.yaml
+/.scribe/endpoints
+/.scribe
+/public/vendor/scribe
+resources/views/scribe/index.blade.php

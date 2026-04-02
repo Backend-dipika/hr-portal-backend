@@ -7,15 +7,35 @@ use App\Models\otp;
 use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Facades\JWTFactory;
 use Illuminate\Support\Facades\Http;
+use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 
 class AuthController extends Controller
 {
+    /**
+     * Check Authenticated User & Send OTP
+     *
+     * Verifies if a user exists with the given mobile number and sends an OTP.
+     *
+     * @group Authentication
+     *
+     * @bodyParam mobile string required User mobile number. Example: 9876543210
+     *
+     * @response 200 {
+     *  "status": true,
+     *  "message": "OTP sent successfully. Please enter the OTP."
+     * }
+     *
+     * @response 404 {
+     *  "message": "User Not Found"
+     * }
+     */
     public function checkAuthenticatedUser(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -30,12 +50,26 @@ class AuthController extends Controller
         }
         $user = User::where('phone_no', $request->mobile)
             ->where('is_disable', false)->first();
+
         if (!$user) {
-            return response()->json(['message' => 'User not authenticated'], 404);
+            return response()->json(['message' => 'User Not Found'], 404);
         }
-        $this->sendSms($user);
-        return response()->json(['message' => 'Verified Successfully, Enter otp'], 200);
+
+        $smsSent = $this->sendSms($user);
+
+        if (!$smsSent) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Failed to send OTP. Please try again.'
+            ], 500);
+        }
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'OTP sent successfully. Please enter the OTP.'
+        ], 200);
     }
+
     public function sendSms($user)
     {
         $otp = rand(1000, 9999);
@@ -48,16 +82,16 @@ class AuthController extends Controller
             otp::where('user_id', $user->id)->delete();
             otp::create([
                 'phone_number' => $user->phone_no,
-                'otp' => $otp,
+                'otp' => Hash::make($otp),
                 'is_used' => false,
                 'expires_at' => now()->addMinutes(5),
                 'user_id' => $user->id,
             ]);
-            Log::info("OTP for {$user->phoneNo}: $otp");
+            Log::info("OTP for {$user->phone_no}: $otp");
             $apiUrl   = config('services.sms.api_url');
             $apiKey   = config('services.sms.api_key');
             $senderId = config('services.sms.sender_id');
-            Log::info("Using SMS API URL: " . $apiUrl);          
+            Log::info("Using SMS API URL: " . $apiUrl);
             Log::info("Using SMS API key: " . $apiKey);
             Log::info("Using SMS sender Id: " . $senderId);
 
@@ -70,15 +104,52 @@ class AuthController extends Controller
             ]);
 
             Log::info("SMS API response: " . $response);
+            if (!$response->successful()) {
+                Log::error("SMS API failed for user {$user->id}. Status: " . $response->status());
+                return false;
+            }
 
-            return response()->json($response);
+            Log::info("OTP sent successfully for user {$user->id}");
+            return true;
+
+            // return response()->json($response);
         } catch (Exception $e) {
             Log::info(" Error in sendOtp method" . $e->getMessage());
+            return false;
         }
         return;
     }
 
-    public function verifyOtp(Request $request)
+    /**
+     * Login User with OTP
+     *
+     * Authenticates user using mobile number and OTP and returns access & refresh tokens.
+     *
+     * @group Authentication
+     *
+     * @bodyParam mobile string required User mobile number. Example: 9876543210
+     * @bodyParam otp string required 4-digit OTP. Example: 1234
+     *
+     * @response 200 {
+     *  "message": "Logged in",
+     *  "user": {
+     *    "id": 1,
+     *    "uuid": "abc-123",
+     *    "name": "John",
+     *    "role": 2
+     *  },
+     *  "tokens": {
+     *    "access_token": "token_here",
+     *    "refresh_token": "refresh_here",
+     *    "token_type": "Bearer"
+     *  }
+     * }
+     *
+     * @response 401 {
+     *  "message": "Invalid or expired OTP"
+     * }
+     */
+    public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'mobile' => 'required|digits:10',
@@ -98,12 +169,11 @@ class AuthController extends Controller
         }
 
         $otpRecord = Otp::where('user_id', $user->id)
-            ->where('otp', $request->otp)
             ->where('is_used', false)
             ->where('expires_at', '>', now())
             ->first();
 
-        if (!$otpRecord) {
+        if (!$otpRecord || !Hash::check($request->otp, $otpRecord->otp)) {
             return response()->json(['message' => 'Invalid or expired OTP'], 401);
         }
         $otpRecord->delete();
@@ -134,15 +204,55 @@ class AuthController extends Controller
 
         Log::info('JWT refresh ttl from config', ['refresh_ttl' => config('jwt.refresh_ttl')]);
 
-
-        return response()->json(['message' => 'Logged in', 'user' => $user], 200)
-            ->cookie('access_token', $accessToken, 15, '/', null, true, true, false,)
-            ->cookie('refresh_token', $refreshToken, 20160, '/', null, true, true, false,);
+        return response()->json([
+            'message' => 'Logged in',
+            'user'    => [
+                'id' => $user->id,
+                'uuid' => $user->uuid,
+                'name' => $user->first_name,
+                'role' => $user->role_id
+            ],
+            'tokens'  => [                        // ← Mobile apps read from here
+                'access_token'  => $accessToken,
+                'refresh_token' => $refreshToken,
+                'token_type'    => 'Bearer',
+            ]
+        ], 200)
+            ->cookie('access_token',  $accessToken, 15,    '/', null, true, true, false)  // ← Web reads from here
+            ->cookie('refresh_token', $refreshToken, 20160, '/', null, true, true, false);
     }
 
+    /**
+     * Refresh Access Token
+     *
+     * Generates a new access token using a valid refresh token.
+     *
+     * @group Authentication
+     *
+     * @bodyParam refresh_token string optional Refresh token (for mobile clients)
+     *
+     * @response 200 {
+     *  "message": "Token refreshed",
+     *  "user": {
+     *    "id": 1,
+     *    "uuid": "abc-123",
+     *    "name": "John",
+     *    "role": 2
+     *  },
+     *  "tokens": {
+     *    "access_token": "new_access_token",
+     *    "refresh_token": "new_refresh_token",
+     *    "token_type": "Bearer"
+     *  }
+     * }
+     *
+     * @response 401 {
+     *  "error": "Invalid refresh token"
+     * }
+     */
     public function refreshToken(Request $request)
     {
-        $refreshToken = $request->cookie('refresh_token');
+        $refreshToken = $request->cookie('refresh_token') ?? $request->input('refresh_token');
         Log::info('Refresh token from frontend', ['refresh token value' => $refreshToken]);
 
         if (!$refreshToken) {
@@ -154,99 +264,177 @@ class AuthController extends Controller
             // 1. Decode the refresh token
             $payload = JWTAuth::setToken($refreshToken)->getPayload();
 
+            // 2. Verify it is actually a refresh token not an access token
+            if ($payload->get('type') !== 'refresh') {
+                Log::warning('Non-refresh token used in refresh endpoint');
+                return response()->json(['error' => 'Invalid token type'], 401);
+            }
+
             // 2. Extract user ID from the payload (we stored it in 'sub')
             $userId = $payload->get('sub');
+            $user   = User::where('id', $userId)
+                ->where('is_disable', false)
+                ->first();
 
-            // 3. Fetch user from database
-            $user = User::findOrFail($userId);
+            if (!$user) {
+                return response()->json(['error' => 'User not found or disabled'], 401);
+            }
+
+            // 4. Blacklist OLD refresh token before issuing new one
+            //    This prevents reuse of the same refresh token (rotation security)
+            try {
+                JWTAuth::setToken($refreshToken)->invalidate();
+            } catch (TokenExpiredException $e) {
+                // Already expired, safe to proceed
+            } catch (JWTException $e) {
+                Log::warning('Could not blacklist old refresh token for user: ' . $user->id);
+            }
 
             // 4. Generate a **new access token**
             $newAccessToken = JWTAuth::fromUser($user);
 
             // 5. Generate a **new refresh token** (rotating refresh)
-
-            // $refreshPayload = JWTFactory::customClaims([
-            //     'sub'  => $user->id,
-            //     'type' => 'refresh',
-            // ])->make([
-            //     'exp' => now()->addMinutes((int) config('jwt.refresh_ttl'))->timestamp
-            // ]);
-            $refreshPayload = JWTFactory::customClaims([
+            $newRefreshPayload = JWTFactory::customClaims([
                 'sub' => $user->id,
                 'type' => 'refresh',
                 'exp' => now()->addMinutes((int) config('jwt.refresh_ttl'))->timestamp
             ])->make([]);
 
-            Log::info('Refresh token payload', ['refresh token value' => config('jwt.refresh_ttl')]);
+            $newRefreshToken = JWTAuth::encode($newRefreshPayload)->get();
 
-            $newRefreshToken = JWTAuth::encode($refreshPayload)->get();
+            Log::info('Token refreshed for user: ' . $user->id);
 
+            // 7. Build response
+            $response = response()->json([
+                'message' => 'Token refreshed',
+                'user'    => [
+                    'id' => $user->id,
+                    'uuid' => $user->uuid,
+                    'name' => $user->first_name,
+                    'role' => $user->role_id
+                ],
+                'tokens'  => [
+                    'access_token'  => $newAccessToken,
+                    'refresh_token' => $newRefreshToken,
+                    'token_type'    => 'Bearer',
+                ]
+            ], 200);
 
-            // Decode refresh token to get expiry
-            $refreshExp = $payload->get('exp');
+            // 8. Set cookies only for web clients
+            if ($request->cookie('refresh_token')) {
+                $response = $response
+                    ->cookie('access_token',  $newAccessToken,  15,    '/', null, true, true, false)
+                    ->cookie('refresh_token', $newRefreshToken, 20160, '/', null, true, true, false);
+            }
 
-            // 🔹 Debug logs
-            Log::info('JWT Debug after login from refresh token', [
-                'user_id'             => $user->id,
-                'refresh_exp_unix'    => $refreshExp,
-                'refresh_exp_human'   => \Carbon\Carbon::createFromTimestamp($refreshExp)->toDateTimeString(),
-                'refresh_token_sample' => $refreshToken // only log sample, avoid full token leak
-            ]);
-
-
-            // 6. Send both tokens back in cookies
-            return response()->json(['message' => 'Logged in', 'user' => $user], 200)
-                ->cookie('access_token', $newAccessToken, 15, '/', null, true, true, false, 'None')
-                ->cookie('refresh_token', $newRefreshToken, 20160, '/', null, true, true, false, 'None');
-        } catch (\Exception $e) {
+            return $response;
+        } catch (TokenExpiredException $e) {
+            Log::info('Expired refresh token used for user attempt');
+            return response()->json(['error' => 'Refresh token expired, please login again'], 401);
+        } catch (JWTException $e) {
             Log::error('Refresh token failed: ' . $e->getMessage());
-            return response()->json(['error' => 'Invalid or expired refresh token'], 401);
+            return response()->json(['error' => 'Invalid refresh token'], 401);
         }
     }
 
+    /**
+     * Logout User
+     *
+     * Logs out the user by invalidating both access and refresh tokens.
+     * 
+     * This endpoint supports both:
+     * - Web clients (via cookies: access_token, refresh_token)
+     * - Mobile clients (via Authorization header and request body)
+     *
+     * @group Authentication
+     *
+     * @header Authorization Bearer {access_token} Example: Bearer eyJ0eXAiOiJKV1QiLCJh...
+     *
+     * @bodyParam refresh_token string optional Refresh token (required for mobile clients). Example: eyJ0eXAiOiJKV1QiLCJh...
+     *
+     * @response 200 {
+     *  "message": "Logged out successfully"
+     * }
+     *
+     * @response 500 {
+     *  "message": "Failed to log out"
+     * }
+     */
     public function logout(Request $request)
     {
         try {
-            $token = $request->cookie('access_token');
-            //   JWTAuth::invalidate(JWTAuth::getToken());
-            if ($token) {
-                JWTAuth::setToken($token)->invalidate();
+            // Support both cookie (web) and Authorization header (mobile)
+            $accessToken  = $request->cookie('access_token')
+                ?? $request->bearerToken();
+            $refreshToken = $request->cookie('refresh_token')
+                ?? $request->input('refresh_token');
+
+            // Invalidate access token
+            if ($accessToken) {
+                try {
+                    JWTAuth::setToken($accessToken)->invalidate();
+                } catch (TokenExpiredException $e) {
+                    // Already expired safe to ignore, proceed with logout
+                    //If error come here then it means token is already expired and we can ignore this error and proceed with logout process
+                } catch (JWTException $e) {
+                    Log::warning('Access token invalidation failed for user: ' . optional($request->user())->id);
+                }
             }
-            return response()->json(['message' => 'Logged out successfully'], 200)
-                ->cookie('access_token', '', -1)
-                ->cookie('refresh_token', '', -1);
+
+            // Invalidate refresh token
+            if ($refreshToken) {
+                try {
+                    JWTAuth::setToken($refreshToken)->invalidate();
+                } catch (TokenExpiredException $e) {
+                    // Already expired — safe to ignore
+                } catch (JWTException $e) {
+                    Log::warning('Refresh token invalidation failed for user: ' . optional($request->user())->id);
+                }
+            }
+
+            $response = response()->json(['message' => 'Logged out successfully'], 200);
+
+            // Clear cookies only for web clients
+            if ($request->cookie('access_token') || $request->cookie('refresh_token')) {
+                $response = $response
+                    ->cookie('access_token',  '', -1, '/', null, true, true, false)
+                    ->cookie('refresh_token', '', -1, '/', null, true, true, false);
+            }
+
+            return $response;
         } catch (JWTException $e) {
+            Log::error('Logout failed: ' . $e->getMessage());
             return response()->json(['message' => 'Failed to log out'], 500);
         }
     }
 
-    public function sendUserDetails(Request $request)
-    {
-        try {
-            Log::info('inside get user info');
-            $user = $request->user();
+    // public function sendUserDetails(Request $request)
+    // {
+    //     try {
+    //         Log::info('inside get user info');
+    //         $user = $request->user();
 
-            if (!$user) {
-                return response()->json([
-                    'error' => 'User not authenticated'
-                ], 401);
-            }
+    //         if (!$user) {
+    //             return response()->json([
+    //                 'error' => 'User not authenticated'
+    //             ], 401);
+    //         }
 
-            return response()->json([
-                'id' => $user->id,
-                'role' => $user->role_id
-            ], 200);
-        } catch (\Exception $e) {
-            // Log the error with stack trace
-            Log::error('Error in sendUserDetails: ' . $e->getMessage(), [
-                'exception' => $e
-            ]);
+    //         return response()->json([
+    //             'id' => $user->id,
+    //             'role' => $user->role_id
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         // Log the error with stack trace
+    //         Log::error('Error in sendUserDetails: ' . $e->getMessage(), [
+    //             'exception' => $e
+    //         ]);
 
-            return response()->json([
-                'error' => 'Something went wrong while fetching user details'
-            ], 500);
-        }
-    }
+    //         return response()->json([
+    //             'error' => 'Something went wrong while fetching user details'
+    //         ], 500);
+    //     }
+    // }
 }
 
 
