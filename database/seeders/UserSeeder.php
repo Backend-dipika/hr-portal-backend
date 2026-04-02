@@ -18,18 +18,17 @@ class UserSeeder extends Seeder
         //Create the user
         DB::table('users')->insert(
             [
-
                 // CEO (top-level user)
                 [
                     'uuid' => Str::uuid(),
                     'salutation' => 'Mr.',
-                    'first_name' => 'Michael',
+                    'first_name' => 'Shivanand ',
                     'middle_name' => null,
-                    'last_name' => 'Scott',
+                    'last_name' => 'Bagwe',
                     'office_id' => 'EMP001',
-                    'personal_email' => 'michael.personal@example.com',
-                    'office_email' => 'jrbackend@samsdigital.in',
-                    'phone_no' => '9999999901',
+                    'personal_email' => 'shivanand@gmail.com',
+                    'office_email' => 'shivanand@samsdigital.in',
+                    'phone_no' => '9029148733',
                     'alt_phone_no' => null,
                     'role_id' => 1, // Assuming role 1 is CEO or top-level
                     'department_id' => 1,
@@ -44,8 +43,8 @@ class UserSeeder extends Seeder
                     'employee_type_id' => 1,
                     'reporting_manager_id' => null,
                     'reporting_TL_id' => null,
-                    'sepration_status' => null,    
-                    'probation_end_date' => null,  
+                    'sepration_status' => null,
+                    'probation_end_date' => null,
                     'remember_token' => Str::random(10),
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -54,13 +53,13 @@ class UserSeeder extends Seeder
                 [
                     'uuid' => Str::uuid(),
                     'salutation' => 'Ms.',
-                    'first_name' => 'Pamela',
+                    'first_name' => 'Simran',
                     'middle_name' => 'Morgan',
-                    'last_name' => 'Beesly',
+                    'last_name' => 'Mukadam',
                     'office_id' => 'EMP002',
-                    'personal_email' => 'pamela.personal@example.com',
-                    'office_email' => 'backend2@samsdigital.in',
-                    'phone_no' => '9999999902',
+                    'personal_email' => 'simran@gmail.com',
+                    'office_email' => 'simran@samsdigital.in',
+                    'phone_no' => '8355825162',
                     'alt_phone_no' => null,
                     'role_id' => 2, // Assuming role 2 is Manager
                     'department_id' => 1,
@@ -75,8 +74,8 @@ class UserSeeder extends Seeder
                     'employee_type_id' => 1,
                     'reporting_manager_id' => null, // Reports to Michael Scott
                     'reporting_TL_id' => null, // Reports to Michael Scott
-                    'sepration_status' => null,    
-                    'probation_end_date' => null,  
+                    'sepration_status' => null,
+                    'probation_end_date' => null,
                     'remember_token' => Str::random(10),
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -84,14 +83,14 @@ class UserSeeder extends Seeder
                 // Regular Employee
                 [
                     'uuid' => Str::uuid(),
-                    'salutation' => 'Mr.',
-                    'first_name' => 'Jim',
+                    'salutation' => 'Ms.',
+                    'first_name' => 'Dipika',
                     'middle_name' => null,
                     'last_name' => 'Halpert',
                     'office_id' => 'EMP003',
-                    'personal_email' => 'jim.personal@example.com',
-                    'office_email' => 'saurabhtidgam1991@gmail.com',
-                    'phone_no' => '9999999903',
+                    'personal_email' => 'dipika@gmail.com',
+                    'office_email' => 'dipika@samsdigital.in',
+                    'phone_no' => '8433679313',
                     'alt_phone_no' => null,
                     'role_id' => 3, // Assuming role 3 is Employee
                     'department_id' => 2,
@@ -115,12 +114,12 @@ class UserSeeder extends Seeder
                 [
                     'uuid' => Str::uuid(),
                     'salutation' => 'Mr.',
-                    'first_name' => 'John',
+                    'first_name' => 'Kiran',
                     'middle_name' => 'A',
-                    'last_name' => 'Doe',
+                    'last_name' => 'Kapse',
                     'office_id' => '001',
-                    'personal_email' => 'john.personal@example.com',
-                    'office_email' => 'john.doe@company.com',
+                    'personal_email' => 'kiran@gmail.com',
+                    'office_email' => 'kiran@samsdigital.in',
                     'phone_no' => '9999999999',
                     'alt_phone_no' => '8888888888',
                     'role_id' => 3,
@@ -129,7 +128,7 @@ class UserSeeder extends Seeder
                     'date_of_joining' => '2022-01-01',
                     'date_of_birth' => '1990-01-01',
                     'marital_status' => 'Single',
-                    'about' => 'A dedicated employee.',
+                    'about' => 'A employee.',
                     'current_location' => 'New York',
                     'blood_grp' => 'O+',
                     'specially_abled' => 'No',
@@ -142,7 +141,6 @@ class UserSeeder extends Seeder
                     'created_at' => now(),
                     'updated_at' => now(),
                 ],
-
 
             ]
         );
