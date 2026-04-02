@@ -178,7 +178,9 @@ class RegistrationController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => ' personal info saved successfully',
-                'emp_id' => $request->emp_id ?? $user->id
+                'emp_id' => $request->emp_id ?? '',
+                'user_id' => $user->id,
+                'user_uuid' => $user->uuid,
             ], 200);
         } catch (Exception $e) {
             Log::error('Failed to save personal info', [
