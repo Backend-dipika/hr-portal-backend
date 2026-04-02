@@ -21,9 +21,11 @@ class VerifyToken
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $accesssToken = $request->cookie('access_token');
+        // $accesssToken = $request->cookie('access_token');
+         $accessToken = $request->cookie('access_token') 
+        ?? $request->bearerToken();
 
-        if (!$accesssToken) {
+        if (!$accessToken) {
             // Log::warning('JWT Middleware: No access_token cookie found');
             return response()->json(['error' => 'Access token missing'], 401);
         }
@@ -34,7 +36,7 @@ class VerifyToken
             // ]);
 
             // Set token manually
-            $user = JWTAuth::setToken($accesssToken)->authenticate();
+            $user = JWTAuth::setToken($accessToken)->authenticate();
             // Log::info('JWT Middleware: user', [
             //     'user' => $user
             // ]);
