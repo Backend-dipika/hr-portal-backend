@@ -47,7 +47,7 @@ Route::middleware(['verify.tokens'])->group(function () {
 
     Route::prefix('employees')->group(function () {
         Route::get('/', [EmployeeController::class, 'index']);      // List
-        Route::get('/{id}', [EmployeeController::class, 'show']);   // Detail
+        Route::get('/{uuid}', [EmployeeController::class, 'show']);   // Detail
     });
 
     // // Route::group(function () {
