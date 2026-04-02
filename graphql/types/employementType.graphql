@@ -1,4 +1,0 @@
-type EmployementType {
-  id: ID!
-  name: String!
-}

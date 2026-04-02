@@ -10,11 +10,11 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\resignation\ResignationController;
 use App\Http\Controllers\user\ProfileController;
 use App\Http\Controllers\user\AuthController;
+use App\Http\Controllers\user\EmployeeController;
 use App\Http\Controllers\user\RegistrationController;
 use App\Models\Appreciation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Nuwave\Lighthouse\Http\GraphQLController;
 
 
 Route::options('{any}', function (Request $request) {
@@ -43,6 +43,11 @@ Route::middleware(['verify.tokens'])->group(function () {
         Route::post('/address', [RegistrationController::class, 'saveAddress'])->name('user.address.save');
         Route::post('/employment-details', [RegistrationController::class, 'saveEmploymentDetails'])->name('user.employmentDetails.save');
         Route::post('/documents', [RegistrationController::class, 'saveDocuments'])->name('user.documents.save');
+    });
+
+    Route::prefix('employees')->group(function () {
+        Route::get('/', [EmployeeController::class, 'index']);      // List
+        Route::get('/{id}', [EmployeeController::class, 'show']);   // Detail
     });
 
     // // Route::group(function () {
