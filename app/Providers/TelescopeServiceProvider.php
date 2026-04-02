@@ -19,18 +19,18 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
 
         $this->hideSensitiveRequestDetails();
 
-        
 
-        Telescope::filter(function (IncomingEntry $entry)  {
-            return 
-                   $entry->isReportableException() ||
-                   $entry->isFailedRequest() ||
-                   $entry->isFailedJob() ||
-                   $entry->isScheduledTask() ||
-                   $entry->hasMonitoredTag();
+
+        Telescope::filter(function (IncomingEntry $entry) {
+            return
+                $entry->isReportableException() ||
+                $entry->isFailedRequest() ||
+                $entry->isFailedJob() ||
+                $entry->isScheduledTask() ||
+                $entry->hasMonitoredTag();
         });
     }
-    
+
 
     /**
      * Prevent sensitive request details from being logged by Telescope.
@@ -57,10 +57,12 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
      */
     protected function gate(): void
     {
-        Gate::define('viewTelescope', function (User $user) {
-            // return in_array($user->email, [
-            //     //
-            // ]);
+        // Gate::define('viewTelescope', function (User $user) {
+        //     // return in_array($user->email, [
+        //     //     //
+        //     // ]);
+        // });
+        Gate::define('viewTelescope', function ($user = null) {
             return true;
         });
     }
