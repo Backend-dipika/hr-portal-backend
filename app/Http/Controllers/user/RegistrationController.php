@@ -15,6 +15,7 @@ use App\Models\UserDocuments;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -24,6 +25,21 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class RegistrationController extends Controller
 {
+    /**
+     * Get Form Options
+     *
+     * Fetches dropdown options required for employee registration forms.
+     *
+     * @group User Management
+     *
+     * @response 200 {
+     *  "status": true,
+     *  "departments": [{"id": 1, "name": "HR"}],
+     *  "designations": [{"id": 1, "name": "Manager"}],
+     *  "employee_types": [{"id": 1, "name": "Full Time"}],
+     *  "reporting_managers": [{"id": 1, "first_name": "John", "last_name": "Doe"}]
+     * }
+     */
     public function sendFormOptions()
     {
         try {
@@ -54,6 +70,41 @@ class RegistrationController extends Controller
         }
     }
 
+    /**
+     * Save Personal Information
+     *
+     * Creates a new employee or updates an existing employee's personal details.
+     *
+     *Note:
+     * - `emp_id` is **nullable when creating a new employee**
+     * - `emp_id` is **required when updating an existing employee**
+     * @group User Management
+     *
+     * @bodyParam emp_id integer nullable  Existing employee ID (for update). Example: 1
+     * @bodyParam salutation string nullable Example: Mr
+     * @bodyParam first_name string required Example: John
+     * @bodyParam middle_name string nullable Example: A
+     * @bodyParam last_name string required Example: Doe
+     * @bodyParam gender string required Example: Male
+     * @bodyParam personal_email string required Example: john@example.com
+     * @bodyParam phone_no string required Example: 9876543210
+     * @bodyParam alt_phone_no string nullable Example: 9123456789
+     * @bodyParam date_of_birth date required Example: 1995-05-10
+     * @bodyParam marital_status string nullable Example: Single
+     * @bodyParam blood_grp string nullable Example: O+
+     * @bodyParam specially_abled string nullable Example: No
+     *
+     * @response 200 {
+     *  "status": true,
+     *  "message": "personal info saved successfully",
+     *  "emp_id": 1
+     * }
+     *
+     * @response 422 {
+     *  "status": false,
+     *  "message": "Validation failed"
+     * }
+     */
     public function savePersonalInfo(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -78,6 +129,7 @@ class RegistrationController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
+        DB::beginTransaction();
         try {
             $user = User::where('id', $request->emp_id)
                 ->where('is_disable', false)
@@ -122,7 +174,7 @@ class RegistrationController extends Controller
                 // $user = User::create($request->all());
                 $this->addLeaveForNewUser($user->id);
             }
-
+            DB::commit();
             return response()->json([
                 'status' => true,
                 'message' => ' personal info saved successfully',
@@ -132,14 +184,36 @@ class RegistrationController extends Controller
             Log::error('Failed to save personal info', [
                 'message' => $e->getMessage(),
             ]);
+            DB::rollBack();
             return response()->json([
                 'status' => false,
                 'message' => 'Error occurred while saving personal info',
-                'error' => $e->getMessage()
             ], 500);
         }
     }
 
+    /**
+     * Save User Addresses
+     *
+     * Saves or updates permanent and current addresses for a user.
+     *
+     * @group User Management
+     *
+     * @bodyParam emp_id integer required User ID. Example: 1
+     * @bodyParam addresses array required List of addresses.
+     * @bodyParam addresses[].type string required Allowed: permanent,current. Example: permanent
+     * @bodyParam addresses[].address1 string required Example: Street 123
+     * @bodyParam addresses[].address2 string nullable Example: Near Mall
+     * @bodyParam addresses[].city string required Example: Mumbai
+     * @bodyParam addresses[].state string required Example: Maharashtra
+     * @bodyParam addresses[].pincode string required Example: 400001
+     * @bodyParam addresses[].country string required Example: India
+     *
+     * @response 200 {
+     *  "status": true,
+     *  "message": "Addresses saved successfully"
+     * }
+     */
     public function saveAddress(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -163,6 +237,7 @@ class RegistrationController extends Controller
         }
 
         try {
+            DB::beginTransaction();
             // Ensure addresses is an array
             $addresses = is_string($request->addresses)
                 ? json_decode($request->addresses, true)
@@ -186,6 +261,7 @@ class RegistrationController extends Controller
                 );
             }
 
+            DB::commit();
             return response()->json([
                 'status' => true,
                 'message' => 'Addresses saved successfully',
@@ -194,21 +270,42 @@ class RegistrationController extends Controller
             Log::error('Error occurred while saving Address Info', [
                 'message' => $e->getMessage(),
             ]);
+            DB::rollBack();
             return response()->json([
                 'status' => false,
                 'message' => 'Error occurred while saving Address Info',
-                'error' => $e->getMessage()
             ], 500);
         }
     }
 
+    /**
+     * Save Employment Details
+     *
+     * Stores employment-related details for a user.
+     *
+     * @group User Management
+     *
+     * @bodyParam emp_id integer required Example: 1
+     * @bodyParam office_id string nullable Example: EMP001
+     * @bodyParam office_email string nullable Example: john@company.com
+     * @bodyParam department_id integer nullable Example: 1
+     * @bodyParam designation_id integer nullable Example: 2
+     * @bodyParam date_of_joining date nullable Example: 2024-01-01
+     * @bodyParam employee_type_id integer nullable Example: 1
+     * @bodyParam reporting_manager_id integer nullable Example: 5
+     *
+     * @response 200 {
+     *  "status": true,
+     *  "message": "Employment details saved successfully"
+     * }
+     */
     public function saveEmploymentDetails(Request $request)
     {
         Log::info('Employeement Request Data:', $request->all());
         $validator = Validator::make($request->all(), [
             'emp_id' => 'required|exists:users,id',
             'office_id' => 'nullable|string|max:255|unique:users,office_id',
-            // 'office_email' => 'nullable|email|max:255|unique:users,office_email',
+            'office_email' => 'nullable|email|max:255|unique:users,office_email',
             'department_id' => 'nullable|exists:departments,id',
             'designation_id' => 'nullable|exists:designations,id',
             'date_of_joining' => 'nullable|date',
@@ -223,6 +320,7 @@ class RegistrationController extends Controller
             ], 422);
         }
         try {
+            DB::beginTransaction();
             User::where('id', $request->emp_id,)->update([
                 'office_id' => $request->office_id,
                 'office_email' => $request->office_email,
@@ -233,7 +331,7 @@ class RegistrationController extends Controller
                 'employee_type_id' => $request->employee_type_id,
                 'reporting_manager_id' => $request->reporting_manager_id ?? null,
             ]);
-
+            DB::commit();
             return response()->json([
                 'status' => true,
                 'message' => 'Employment details saved successfully',
@@ -242,14 +340,33 @@ class RegistrationController extends Controller
             Log::error('Error occurred while saving Employeement Details', [
                 'message' => $e->getMessage(),
             ]);
+            DB::rollBack();
             return response()->json([
                 'status' => false,
                 'message' => 'Error occurred while saving Employeement Details',
-                'error' => $e->getMessage()
             ], 500);
         }
     }
 
+    /**
+     * Upload User Documents
+     *
+     * Uploads employee documents such as Aadhaar, PAN, certificates, etc.
+     *
+     * @group User Management
+     *
+     * @bodyParam emp_id integer required Example: 1
+     * @bodyParam adhar_card file nullable Image (jpeg/png). Max: 3MB
+     * @bodyParam pan_card file nullable Image (jpeg/png). Max: 3MB
+     * @bodyParam certificate file nullable Image (jpeg/png). Max: 3MB
+     * @bodyParam experience_letter file nullable Image (jpeg/png). Max: 3MB
+     * @bodyParam salary_slip file nullable File (jpeg/png/pdf)
+     *
+     * @response 200 {
+     *  "status": true,
+     *  "message": "Documents saved successfully"
+     * }
+     */
     public function saveDocuments(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -268,7 +385,7 @@ class RegistrationController extends Controller
             ], 422);
         }
         try {
-
+            DB::beginTransaction();
             $path = "user/{$request->emp_id}";
 
             // Handle file uploads if provided
@@ -288,7 +405,7 @@ class RegistrationController extends Controller
                 ['user_id' => $request->emp_id],
                 $filePaths
             ));
-
+            DB::commit();
             return response()->json([
                 'status' => true,
                 'message' => 'Documnets saved successfully',
@@ -297,14 +414,32 @@ class RegistrationController extends Controller
             Log::error('Error occurred while saving documnets', [
                 'message' => $e->getMessage(),
             ]);
+            DB::rollBack();
             return response()->json([
                 'status' => false,
                 'message' => 'Error occurred while saving documnets',
-                'error' => $e->getMessage()
             ], 500);
         }
     }
 
+    /**
+     * Disable User
+     *
+     * Disables an employee account (soft disable).
+     *
+     * @group User Management
+     *
+     * @bodyParam user_id integer required Example: 1
+     *
+     * @response 200 {
+     *  "message": "Employee credentials disabled successfully!"
+     * }
+     *
+     * @response 422 {
+     *  "status": false,
+     *  "message": "Validation failed"
+     * }
+     */
     public function disableUser(Request $request)
     {
         $validator = Validator::make($request->all(), [
