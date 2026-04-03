@@ -178,7 +178,7 @@ class RegistrationController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => ' personal info saved successfully',
-                'emp_id' => $request->emp_id ?? '',
+                'emp_id' => $request->emp_id ?? $user->id,
                 'user_id' => $user->id,
                 'user_uuid' => $user->uuid,
             ], 200);
@@ -295,6 +295,8 @@ class RegistrationController extends Controller
      * @bodyParam date_of_joining date nullable Example: 2024-01-01
      * @bodyParam employee_type_id integer nullable Example: 1
      * @bodyParam reporting_manager_id integer nullable Example: 5
+     * @bodyParam current_location string nullable Example: Mumbai
+     * @bodyParam work_mode string nullable Example: remote
      *
      * @response 200 {
      *  "status": true,
@@ -306,13 +308,15 @@ class RegistrationController extends Controller
         Log::info('Employeement Request Data:', $request->all());
         $validator = Validator::make($request->all(), [
             'emp_id' => 'required|exists:users,id',
-            'office_id' => 'nullable|string|max:255|unique:users,office_id',
+            'office_id' => ['nullable', 'string', 'max:255', Rule::unique('users', 'office_id')->ignore($request->emp_id)],
             'office_email' => 'nullable|email|max:255|unique:users,office_email',
             'department_id' => 'nullable|exists:departments,id',
             'designation_id' => 'nullable|exists:designations,id',
             'date_of_joining' => 'nullable|date',
             'employee_type_id' => 'nullable|exists:employee_types,id',
             'reporting_manager_id' => 'nullable|exists:users,id',
+            'current_location' => 'nullable|string|max:255',
+            'work_mode' => 'nullable|string|in:remote,onsite,hybrid',
         ]);
         if ($validator->fails()) {
             return response()->json([
@@ -332,6 +336,8 @@ class RegistrationController extends Controller
                 'probation_end_date' => Carbon::parse($request->date_of_joining)->addMonths(3),
                 'employee_type_id' => $request->employee_type_id,
                 'reporting_manager_id' => $request->reporting_manager_id ?? null,
+                'current_location' => $request->current_location ?? null,
+                'work_mode' => $request->work_mode ?? null,
             ]);
             DB::commit();
             return response()->json([
@@ -495,7 +501,6 @@ class RegistrationController extends Controller
         }
     }
 
-    // public function addLeaveForNewUser(){}
     public function addLeaveForNewUser($userId)
     {
         $year = now()->year;

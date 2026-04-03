@@ -37,6 +37,8 @@ class UserResource extends JsonResource
             'probation_end_date' => $this->probation_end_date ?? '',
             'sepration_status' => $this->sepration_status,
             'sepration_date' => $this->sepration_date,
+            'current_location' => $this->current_location ?? '',
+            'work_mode' => $this->work_mode ?? '',
 
             'department' => $this->whenLoaded('department', function () {
                 return [
@@ -69,15 +71,15 @@ class UserResource extends JsonResource
                 });
             }),
 
-            'document' => $this->whenLoaded('document', function () {
-                return [
-                    'adhar_card' => $this->document?->adhar_card,
-                    'pan_card' => $this->document?->pan_card,
-                    'certificate' => $this->document?->certificate,
-                    'experience_letter' => $this->document?->experience_letter,
-                    'salary_slip' => $this->document?->salary_slip,
-                ];
-            }),
+            // 'document' => $this->whenLoaded('document', function () {
+            //     return [
+            //         'adhar_card' => $this->document?->adhar_card,
+            //         'pan_card' => $this->document?->pan_card,
+            //         'certificate' => $this->document?->certificate,
+            //         'experience_letter' => $this->document?->experience_letter,
+            //         'salary_slip' => $this->document?->salary_slip,
+            //     ];
+            // }),
 
             'employee_type' => $this->whenLoaded('employeeType', function () {
                 return [

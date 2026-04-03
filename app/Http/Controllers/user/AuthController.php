@@ -422,7 +422,8 @@ class AuthController extends Controller
 
             return response()->json([
                 'id' => $user->id,
-                'role' => $user->role_id
+                'role' => $user->role_id,
+                'uuid' => $user->uuid,
             ], 200);
         } catch (\Exception $e) {
             // Log the error with stack trace

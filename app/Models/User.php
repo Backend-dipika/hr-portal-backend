@@ -55,7 +55,7 @@ class User extends Authenticatable implements JWTSubject
         'profile_picture',
         'sepration_date',
         'sepration_status',
-
+        'work_mode',
 
 
     ];
@@ -138,7 +138,7 @@ class User extends Authenticatable implements JWTSubject
         return $this->hasOne(LeaveBalance::class, 'user_id');
     }
 
-     public function document()
+    public function document()
     {
         return $this->hasOne(UserDocuments::class, 'user_id');
     }

@@ -50,15 +50,20 @@ Route::middleware(['verify.tokens'])->group(function () {
         Route::get('/{uuid}', [EmployeeController::class, 'show']);   // Detail
     });
 
-    // // Route::group(function () {
-    // Route::put('/profile/{id}', [ProfileController::class, 'update'])->name('profile.update');
-    // Route::get('/get-roles', [ProfileController::class, 'sendRoles']);
-    // Route::get('/get-departments', [ProfileController::class, 'sendDepartments']);
-    // Route::post('/profile-picture/update', [ProfileController::class, 'updateProfilePicture']);
-    // Route::delete('/profile-picture/delete', [ProfileController::class, 'deleteProfilePicture']);
-    // Route::get('user-documents/{id}', [ProfileController::class, 'getUserDocuments']);
-    // Route::post('user-documents/update', [ProfileController::class, 'updateDocuments']);
-    // // });
+
+    Route::patch('/profile/{uuid}', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/get-roles', [ProfileController::class, 'sendRoles']);
+    Route::get('/get-departments', [ProfileController::class, 'sendDepartments']);
+    Route::post('/profile-picture/update', [ProfileController::class, 'updateProfilePicture']);
+    Route::delete('/profile-picture/delete', [ProfileController::class, 'deleteProfilePicture']);
+
+    Route::prefix('user-documents')->group(function () {
+        Route::get('/{user_uuid}', [ProfileController::class, 'getUserDocuments']);
+        Route::post('/{user_uuid}', [ProfileController::class, 'updateDocument']);
+        Route::delete('/{user_uuid}', [ProfileController::class, 'deleteDocument']);
+    });
+
+    
 
 
 
