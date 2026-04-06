@@ -20,7 +20,7 @@ class LeaveTypeController extends Controller
             // $leaveTypes = LeaveType::all();
             // return response()->json(['data' => $leaveTypes, 'message' => 'Leave Type fetched successfully'], 200);
         } catch (Exception $e) {
-            return response()->json(['error' => 'An error occurred while fetching leave types.', 'message' => $e->getMessage()], 500);
+            return response()->json(['message' => 'An error occurred while fetching leave types.'], 500);
         }
     }
 
@@ -75,7 +75,7 @@ class LeaveTypeController extends Controller
                 'message' => 'Pending leaves calculated successfully'
             ], 200);
         } catch (Exception $e) {
-            return response()->json(['error' => 'An error occurred while fetching leave types.', 'message' => $e->getMessage()], 500);
+            return response()->json(['message' => 'An error occurred while fetching leave types.'], 500);
         }
     }
 
@@ -106,7 +106,7 @@ class LeaveTypeController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Something went wrong',
-                'error'   => $e->getMessage()
+                // 'error'   => $e->getMessage()
             ], 500);
         }
     }
@@ -140,7 +140,7 @@ class LeaveTypeController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Something went wrong',
-                'error'   => $e->getMessage()
+                // 'error'   => $e->getMessage()
             ], 500);
         }
     }

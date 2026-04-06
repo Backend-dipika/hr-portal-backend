@@ -40,7 +40,7 @@ class YearEndLeaveController extends Controller
                 ]
             ], 200);
         } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+            return response()->json(['status' => 'false', 'message' => 'An error occurred while checking year-end process.'], 500);
         }
     }
 
@@ -118,9 +118,9 @@ class YearEndLeaveController extends Controller
                 ->where('is_closed', false)
                 ->get();
             Log::info('[YearEndLeaveController.showApprovalRequests] fetched rows', ['count' => $requests]);
-            return response()->json(['status' => 'success', 'data' => $requests], 200);
+            return response()->json(['status' => 'true', 'data' => $requests], 200);
         } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+            return response()->json(['status' => 'false', 'message' => 'An error occurred while fetching approval requests.'], 500);
         }
     }
 
@@ -131,7 +131,7 @@ class YearEndLeaveController extends Controller
             'action' => 'required|In:approved,rejected',
         ]);
         if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => $validator->errors()->all()], 422);
+            return response()->json(['status' => 'false', 'message' => $validator->errors()->all()], 422);
         }
         try {
             $leaveYearEndAction = LeaveYearEndAction::find($request->id);
@@ -188,7 +188,7 @@ class YearEndLeaveController extends Controller
             }
             return response()->json(['status' => 'success', 'message' => 'Year-end action updated successfully.'], 200);
         } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+            return response()->json(['status' => 'false', 'message' => 'An error occurred while updating year-end action.'], 500);
         }
     }
 }

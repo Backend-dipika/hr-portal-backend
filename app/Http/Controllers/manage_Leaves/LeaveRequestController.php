@@ -18,51 +18,51 @@ use Illuminate\Support\Facades\Route;
 
 class LeaveRequestController extends Controller
 {
-public function leaveSummary(Request $request)  //leave balance summary for the user
-{
-    Log::channel('daily')->info("📌 leaveSummary called");
+    public function leaveSummary(Request $request)  //leave balance summary for the user
+    {
+        Log::channel('daily')->info("📌 leaveSummary called");
 
-    // Step 1: Get authenticated user
-    $user = Auth::user();
-    if (!$user) {
-        Log::channel('daily')->warning("⚠️ leaveSummary: Unauthenticated access");
-        return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+        // Step 1: Get authenticated user
+        $user = Auth::user();
+        if (!$user) {
+            Log::channel('daily')->warning("⚠️ leaveSummary: Unauthenticated access");
+            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+        }
+        Log::channel('daily')->info("👤 Authenticated user", ['user_id' => $user->id, 'role' => $user->role->name]);
+
+        // Step 2: Determine employee ID to fetch (prioritize query param)
+        $employeeId = $request->query('employee_id') ?? $user->id;
+        Log::channel('daily')->info("📌 Employee ID to fetch leave summary", ['employee_id' => $employeeId]);
+
+        // Step 3: Fetch leave balances for the current year only
+        $currentYear = now()->year;
+        $leaveBalances = LeaveBalance::with('leaveType')
+            ->where('user_id', $employeeId)
+            ->where('year', $currentYear)
+            ->get();
+
+        Log::channel('daily')->info("📌 Fetched leave balances count for year {$currentYear}", ['count' => $leaveBalances->count()]);
+
+        // Step 4: Map balances into structured array
+        $leaveSummary = $leaveBalances->map(function ($balance) {
+            $mapped = [
+                'type' => $balance->leaveType->name ?? 'Unknown',
+                'available' => $balance->remaining_days ?? 0,
+                'annual' => $balance->total_allocated ?? 0,
+                'consumed' => $balance->used_days ?? 0,
+            ];
+            Log::channel('daily')->info("📄 Leave balance mapped", $mapped);
+            return $mapped;
+        });
+
+        // Step 5: Log final summary before returning
+        Log::channel('daily')->info("✅ Final leave summary prepared", ['summary' => $leaveSummary]);
+
+        return response()->json([
+            'success' => true,
+            'leaveSummary' => $leaveSummary,
+        ]);
     }
-    Log::channel('daily')->info("👤 Authenticated user", ['user_id' => $user->id, 'role' => $user->role->name]);
-
-    // Step 2: Determine employee ID to fetch (prioritize query param)
-    $employeeId = $request->query('employee_id') ?? $user->id;
-    Log::channel('daily')->info("📌 Employee ID to fetch leave summary", ['employee_id' => $employeeId]);
-
-    // Step 3: Fetch leave balances for the current year only
-    $currentYear = now()->year;
-    $leaveBalances = LeaveBalance::with('leaveType')
-        ->where('user_id', $employeeId)
-        ->where('year', $currentYear)
-        ->get();
-
-    Log::channel('daily')->info("📌 Fetched leave balances count for year {$currentYear}", ['count' => $leaveBalances->count()]);
-
-    // Step 4: Map balances into structured array
-    $leaveSummary = $leaveBalances->map(function ($balance) {
-        $mapped = [
-            'type' => $balance->leaveType->name ?? 'Unknown',
-            'available' => $balance->remaining_days ?? 0,
-            'annual' => $balance->total_allocated ?? 0,
-            'consumed' => $balance->used_days ?? 0,
-        ];
-        Log::channel('daily')->info("📄 Leave balance mapped", $mapped);
-        return $mapped;
-    });
-
-    // Step 5: Log final summary before returning
-    Log::channel('daily')->info("✅ Final leave summary prepared", ['summary' => $leaveSummary]);
-
-    return response()->json([
-        'success' => true,
-        'leaveSummary' => $leaveSummary,
-    ]);
-}
 
 
     public function store(Request $request)
@@ -200,7 +200,7 @@ public function leaveSummary(Request $request)  //leave balance summary for the 
                 }
             }
         }
-        
+
 
         return response()->json([
             'message' => 'Leave request submitted successfully.',
@@ -342,7 +342,7 @@ public function leaveSummary(Request $request)  //leave balance summary for the 
         //         'carry_forward_days' => 0
         //     ]
         // );
-        $balance= LeaveBalance::where('user_id', $leaveRequest->user_id)
+        $balance = LeaveBalance::where('user_id', $leaveRequest->user_id)
             ->where('leave_type_id', $deductionLeaveTypeId)
             ->where('year', $year)
             ->first();
@@ -618,7 +618,7 @@ public function leaveSummary(Request $request)  //leave balance summary for the 
             return response()->json([
                 'success' => false,
                 'message' => 'Server error while fetching leave requests. Check server logs for details.',
-                'error' => config('app.debug') ? $e->getMessage() : null,
+                // 'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }

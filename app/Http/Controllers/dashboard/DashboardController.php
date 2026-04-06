@@ -41,7 +41,8 @@ class DashboardController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => $e->getMessage()
+                'message' => 'An error occurred fetching birthdays and anniversaries',
+                // 'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -75,7 +76,8 @@ class DashboardController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => $e->getMessage()
+                'message' => 'An error occurred fetching employees on leave',
+                // 'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -101,7 +103,8 @@ class DashboardController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => $e->getMessage()
+                'message' => 'An error occurred fetching statistics',
+                // 'error' => $e->getMessage()
             ], 500);
         }
     }

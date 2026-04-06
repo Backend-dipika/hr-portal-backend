@@ -54,7 +54,7 @@ class HolidayController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'An error occurred while responding to holidays creation',
-                'error' => $e->getMessage()
+                // 'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -77,7 +77,7 @@ class HolidayController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'An error occurred fetching holidays details',
-                'error' => $e->getMessage()
+                // 'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -102,7 +102,7 @@ class HolidayController extends Controller
             ], 200);
         } catch (Exception $e) {
             return response()->json([
-                'error' => $e->getMessage(),
+                // 'error' => $e->getMessage(),
                 'status' => false,
                 'message' => 'An error occurred while deleting the holiday',
 
@@ -155,7 +155,7 @@ class HolidayController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'An error occurred while updating the holiday',
-                'error' => $e->getMessage()
+                // 'error' => $e->getMessage()
             ], 500);
         }
     }

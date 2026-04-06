@@ -54,7 +54,7 @@ class ResignationController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'An error occurred while fetching resigned employees',
-                'error' => $e->getMessage()
+                // 'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -90,7 +90,7 @@ class ResignationController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'An error occurred while fetching resigned employees',
-                'error' => $e->getMessage()
+                // 'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -201,7 +201,7 @@ class ResignationController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'An error occurred while initiating resignation',
-                'error' => $e->getMessage()
+                // 'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -309,7 +309,7 @@ class ResignationController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'An error occurred while responding to resignation',
-                'error' => $e->getMessage()
+                // 'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -347,7 +347,7 @@ class ResignationController extends Controller
             return response()->json([
                 'status' => false,
                 'message' => 'An error occurred while cancelling resignation',
-                'error' => $e->getMessage()
+                // 'error' => $e->getMessage()
             ], 500);
         }
     }
