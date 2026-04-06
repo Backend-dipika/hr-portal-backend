@@ -28,8 +28,10 @@ Route::get('/user', function (Request $request) {
 
 
 Route::prefix('auth')->group(function () {
-    Route::post('/check', [AuthController::class, 'checkAuthenticatedUser'])->middleware('throttle:otp');
-    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:otp-verify');
+    Route::post('/check', [AuthController::class, 'checkAuthenticatedUser']);
+    // ->middleware('throttle:otp');
+    Route::post('/login', [AuthController::class, 'login']);
+    // ->middleware('throttle:otp-verify');
     Route::post('/getNewToken', [AuthController::class, 'refreshToken']);
     Route::post('/logoff', [AuthController::class, 'logout']);
     Route::get('/getuserinfo', [AuthController::class, 'sendUserDetails'])->middleware('verify.tokens');
