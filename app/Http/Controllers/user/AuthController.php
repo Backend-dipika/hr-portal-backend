@@ -218,10 +218,34 @@ class AuthController extends Controller
                 'token_type'    => 'Bearer',
             ]
         ], 200)
-          ->cookie('access_token',  $accessToken, 15,    '/', null, false, true, false)  // ← Web reads from here
-            ->cookie('refresh_token', $refreshToken, 20160, '/', null, false, true, false);
-            // ->cookie('access_token',  $accessToken, 15,    '/', null, true, true, false)  // ← Web reads from here
-            // ->cookie('refresh_token', $refreshToken, 20160, '/', null, true, true, false);
+            ->cookie(
+                'access_token',   // name
+                $accessToken,     // value
+                15,               // minutes
+                '/',              // path
+                null,             // domain
+                false,            // secure (set true in production with HTTPS)
+                true,             // httpOnly
+                false,            // raw
+                'Lax'             // ✅ sameSite — was missing entirely
+            )
+            ->cookie(
+                'refresh_token',
+                $refreshToken,
+                20160,
+                '/',
+                null,
+                false,            // secure (set true in production with HTTPS)
+                true,
+                false,
+                'Lax'             // ✅ sameSite — was missing entirely
+            );
+        //existing code for local
+        // ->cookie('access_token',  $accessToken, 15,    '/', null, true, true, false)  // ← Web reads from here
+        // ->cookie('refresh_token', $refreshToken, 20160, '/', null, true, true, false);
+        // For secure cookies (HTTPS only),Production
+        //->cookie('access_token',  $accessToken,  15,    '/', null, true, true, false, 'None')
+        // ->cookie('refresh_token', $refreshToken, 20160, '/', null, true, true, false, 'None')
     }
 
     /**
