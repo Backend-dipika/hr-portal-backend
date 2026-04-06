@@ -123,3 +123,4 @@ Route::middleware(['verify.tokens'])->group(function () {
         Route::get('/stats', [DashboardController::class, 'showStatsComponentData']);
     });
 });
+//commit
