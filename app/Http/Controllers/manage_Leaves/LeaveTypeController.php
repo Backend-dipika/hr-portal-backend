@@ -14,8 +14,11 @@ class LeaveTypeController extends Controller
     public function index()
     {
         try {
-            $leaveTypes = LeaveType::all();
+             $leaveTypes = LeaveType::paginate(5);
+
             return response()->json(['data' => $leaveTypes, 'message' => 'Leave Type fetched successfully'], 200);
+            // $leaveTypes = LeaveType::all();
+            // return response()->json(['data' => $leaveTypes, 'message' => 'Leave Type fetched successfully'], 200);
         } catch (Exception $e) {
             return response()->json(['error' => 'An error occurred while fetching leave types.', 'message' => $e->getMessage()], 500);
         }

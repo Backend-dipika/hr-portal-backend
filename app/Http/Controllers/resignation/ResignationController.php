@@ -59,7 +59,7 @@ class ResignationController extends Controller
         }
     }
 
-    public function showResignedEmployees()
+    public function  showResignedEmployees()
     {
         try {
             Log::info("show resigned employee called");
@@ -231,14 +231,14 @@ class ResignationController extends Controller
                 ->update(['approval_status' => $request->action, 'approval_date' => Carbon::now(),]);
 
             $employee = User::find($request->employee_id);
-            
-                    // $ceo = User::find(1);
-                    // $ceo->notify(new ResignationSentNotification(
-                    //     $ceo->first_name . ' ' . $ceo->last_name,
-                    //     $ceo->personal_email,
-                    //     $request->expected_last_working_date,
-                    //     $request->message
-                    // )); 
+
+            // $ceo = User::find(1);
+            // $ceo->notify(new ResignationSentNotification(
+            //     $ceo->first_name . ' ' . $ceo->last_name,
+            //     $ceo->personal_email,
+            //     $request->expected_last_working_date,
+            //     $request->message
+            // )); 
             if ($request->action === 'approved') {
 
                 $isSecond = ResignationRequestApproval::where('resignation_request_id', $request->resignation_id)
@@ -247,14 +247,13 @@ class ResignationController extends Controller
                 if ($isSecond && $request->approval_order == 1) {
                     // Manager approved → unlock CEO row (set to pending)
                     $isSecond->update(['approval_status' => 'pending']);
-                     $ceo = User::find(1);
+                    $ceo = User::find(1);
                     $ceo->notify(new ResignationSentNotification(
                         $employee->first_name . ' ' . $employee->last_name,
                         $employee->personal_email,
                         $request->expected_last_working_date,
                         $request->message
-                    )); 
-
+                    ));
                 } else {
                     // ResignationRequest::where('id', $request->resignation_id)
                     //     ->update(['final_status' => 'approved']);
@@ -264,10 +263,10 @@ class ResignationController extends Controller
                     //         'sepration_status' => 'resigned',
                     //         'sepration_date' => Carbon::now()->addMonths(3)
                     //     ]);
-                // }
+                    // }
 
-                // // Only CEO (order 2) finalizes approval
-                // if ($request->approval_order == 2) {
+                    // // Only CEO (order 2) finalizes approval
+                    // if ($request->approval_order == 2) {
                     ResignationRequest::where('id', $request->resignation_id)
                         ->update(['final_status' => 'approved']);
 

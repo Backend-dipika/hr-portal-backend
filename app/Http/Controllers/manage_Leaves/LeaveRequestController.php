@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Route;
 
 class LeaveRequestController extends Controller
 {
-public function leaveSummary(Request $request) 
+public function leaveSummary(Request $request)  //leave balance summary for the user
 {
     Log::channel('daily')->info("📌 leaveSummary called");
 

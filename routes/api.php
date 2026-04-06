@@ -63,66 +63,63 @@ Route::middleware(['verify.tokens'])->group(function () {
         Route::delete('/{user_uuid}', [ProfileController::class, 'deleteDocument']);
     });
 
-    
+
+    Route::post('/leaves', [LeaveRequestController::class, 'store']);//to apply for leave
+    Route::get('/leave-requests', [LeaveRequestController::class, 'index']);
+    Route::get('/my-leaves', [LeaveRequestController::class, 'userLeaves']); //all the leave  request of user 
+    Route::get('/my-leaves/{id}/status', [LeaveRequestController::class, 'leaveStatus']);
+    Route::prefix('leave')->group(function () {
+        Route::post('/{id}/approve', [LeaveRequestController::class, 'approveLeave'])->name('leave.approve');
+        Route::post('/{id}/reject', [LeaveRequestController::class, 'rejectLeave'])->name('leave.reject');
+        Route::get('/summary', [LeaveRequestController::class, 'leaveSummary'])->name('leave.summary'); // in tabs data 
+    });
 
 
 
-    // Route::prefix('resign')->group(function () {
-    //     Route::get('/employees', [ResignationController::class, 'showResignedEmployees']);
-    //     Route::post('/initiate', [ResignationController::class, 'initiateResignation']);
-    //     Route::get('/check', [ResignationController::class, 'checkIfResigned']);
-    //     Route::post('/cancel', [ResignationController::class, 'cancelResignation']);
-    //     Route::post('/response', [ResignationController::class, 'responseToResignation']);
-    // });
+    Route::prefix('resign')->group(function () {
+        Route::get('/employees', [ResignationController::class, 'showResignedEmployees']);
+        Route::post('/initiate', [ResignationController::class, 'initiateResignation']);
+        Route::get('/check', [ResignationController::class, 'checkIfResigned']);
+        Route::post('/cancel', [ResignationController::class, 'cancelResignation']);
+        Route::post('/response', [ResignationController::class, 'responseToResignation']);
+    });
 
-    // Route::prefix('holidays')->group(function () {
-    //     Route::post('/add', [HolidaysController::class, 'addHolidays']);
-    //     Route::get('/list', [HolidaysController::class, 'showHolidayList']);
-    //     Route::delete('/delete/{id}', [HolidaysController::class, 'deleteHoliday']);
-    //     Route::post('/update', [HolidaysController::class, 'updateHoliday']);
-    // });
+    Route::prefix('holidays')->group(function () {
+        Route::post('/add', [HolidaysController::class, 'addHolidays']);
+        Route::get('/list', [HolidaysController::class, 'showHolidayList']);
+        Route::delete('/delete/{id}', [HolidaysController::class, 'deleteHoliday']);
+        Route::post('/update', [HolidaysController::class, 'updateHoliday']);
+    });
 
-    // Route::prefix('appreciation')->group(function () {
-    //     Route::post('/send', [AppreciationController::class, 'sendAppreiation']);
-    //     Route::get('/get-user', [AppreciationController::class, 'sendUsername']);
-    // });
+    Route::prefix('appreciation')->group(function () {
+        Route::post('/send', [AppreciationController::class, 'sendAppreiation']);
+        Route::get('/get-user', [AppreciationController::class, 'sendUsername']);
+    });
 
-    // Route::prefix('notification')->group(function () {
-    //     Route::get('/all', [NotificationController::class, 'getNotifications']);
-    // });
-
-
-    // Route::post('/leaves', [LeaveRequestController::class, 'store']);
-    // Route::get('/leave-requests', [LeaveRequestController::class, 'index']);
-
-    // Route::prefix('leave')->group(function () {
-    //     Route::post('/{id}/approve', [LeaveRequestController::class, 'approveLeave'])->name('leave.approve');
-    //     Route::post('/{id}/reject', [LeaveRequestController::class, 'rejectLeave'])->name('leave.reject');
-    //     Route::get('/summary', [LeaveRequestController::class, 'leaveSummary'])->name('leave.summary');
-    // });
-
-    // Route::prefix('leave-types')->group(function () {
-    //     Route::get('/show', [LeaveTypeController::class, 'index']);
-    //     Route::post('/add', [LeaveTypeController::class, 'store']);
-    //     Route::put('/update', [LeaveTypeController::class, 'update']);
-    //     Route::post('/cancel/{id}', [LeaveRequestController::class, 'cancelLeave']);
-    //     Route::get('/pending', [LeaveTypeController::class, 'showPendingLeavesOfAllEmployees']);
-    // });
-
-    // Route::prefix('forward-encash')->group(function () {
-    //     Route::get('/get', [YearEndLeaveController::class, 'checkIfYearEndProcessNeeded']);
-    //     Route::post('/update', [YearEndLeaveController::class, 'updateYearEndAction']);
-    //     Route::get('/requests', [YearEndLeaveController::class, 'showApprovalRequests']);
-    //     Route::post('/response', [YearEndLeaveController::class, 'saveResponseForEncashment']);
-    // });
-
-    // Route::prefix('dashboard')->group(function () {
-    //     Route::get('/bday-anniversaries', [DashboardController::class, 'showbirthdayAnniversaries']);
-    //     Route::get('/on-leave', [DashboardController::class, 'showOffThisWeekEmployees']);
-    //     Route::get('/stats', [DashboardController::class, 'showStatsComponentData']);
-    // });
+    Route::prefix('notification')->group(function () {
+        Route::get('/all', [NotificationController::class, 'getNotifications']);
+    });
 
 
-    // Route::get('/my-leaves', [LeaveRequestController::class, 'userLeaves']);
-    // Route::get('/my-leaves/{id}/status', [LeaveRequestController::class, 'leaveStatus']);
+
+    Route::prefix('leave-types')->group(function () {
+        Route::get('/show', [LeaveTypeController::class, 'index']);
+        Route::post('/add', [LeaveTypeController::class, 'store']);
+        Route::put('/update', [LeaveTypeController::class, 'update']);
+        Route::post('/cancel/{id}', [LeaveRequestController::class, 'cancelLeave']);
+        Route::get('/pending', [LeaveTypeController::class, 'showPendingLeavesOfAllEmployees']);
+    });
+
+    Route::prefix('forward-encash')->group(function () {
+        Route::get('/get', [YearEndLeaveController::class, 'checkIfYearEndProcessNeeded']);
+        Route::post('/update', [YearEndLeaveController::class, 'updateYearEndAction']);
+        Route::get('/requests', [YearEndLeaveController::class, 'showApprovalRequests']);
+        Route::post('/response', [YearEndLeaveController::class, 'saveResponseForEncashment']);
+    });
+
+    Route::prefix('dashboard')->group(function () {
+        Route::get('/bday-anniversaries', [DashboardController::class, 'showbirthdayAnniversaries']);
+        Route::get('/on-leave', [DashboardController::class, 'showOffThisWeekEmployees']);
+        Route::get('/stats', [DashboardController::class, 'showStatsComponentData']);
+    });
 });
