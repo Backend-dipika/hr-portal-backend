@@ -174,7 +174,7 @@ class AuthController extends Controller
             ->first();
 
         if (!$otpRecord || !Hash::check($request->otp, $otpRecord->otp)) {
-            return response()->json(['message' => 'Invalid or expired OTP'], 401);
+            return response()->json(['message' => 'Invalid or expired OTP'], 422);
         }
         $otpRecord->delete();
 
