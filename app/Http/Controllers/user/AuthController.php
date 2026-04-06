@@ -218,8 +218,10 @@ class AuthController extends Controller
                 'token_type'    => 'Bearer',
             ]
         ], 200)
-            ->cookie('access_token',  $accessToken, 15,    '/', null, true, true, false)  // ← Web reads from here
-            ->cookie('refresh_token', $refreshToken, 20160, '/', null, true, true, false);
+          ->cookie('access_token',  $accessToken, 15,    '/', null, false, true, false)  // ← Web reads from here
+            ->cookie('refresh_token', $refreshToken, 20160, '/', null, false, true, false);
+            // ->cookie('access_token',  $accessToken, 15,    '/', null, true, true, false)  // ← Web reads from here
+            // ->cookie('refresh_token', $refreshToken, 20160, '/', null, true, true, false);
     }
 
     /**
