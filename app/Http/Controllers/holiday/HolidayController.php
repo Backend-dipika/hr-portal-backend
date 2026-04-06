@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
-class HolidaysController extends Controller
+class HolidayController extends Controller
 {
     public function addHolidays(Request $request)
     {

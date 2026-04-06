@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\appreciation\AppreciationController;
 use App\Http\Controllers\dashboard\DashboardController;
+use App\Http\Controllers\holiday\HolidayController;
 use App\Http\Controllers\holiday\HolidaysController;
 use App\Http\Controllers\manage_Leaves\LeaveRequestController;
 use App\Http\Controllers\manage_Leaves\LeaveTypeController;
@@ -85,10 +86,10 @@ Route::middleware(['verify.tokens'])->group(function () {
     });
 
     Route::prefix('holidays')->group(function () {
-        Route::post('/add', [HolidaysController::class, 'addHolidays']);
-        Route::get('/list', [HolidaysController::class, 'showHolidayList']);
-        Route::delete('/delete/{id}', [HolidaysController::class, 'deleteHoliday']);
-        Route::post('/update', [HolidaysController::class, 'updateHoliday']);
+        Route::post('/add', [HolidayController::class, 'addHolidays']);
+        Route::get('/list', [HolidayController::class, 'showHolidayList']);
+        Route::delete('/delete/{id}', [HolidayController::class, 'deleteHoliday']);
+        Route::post('/update', [HolidayController::class, 'updateHoliday']);
     });
 
     Route::prefix('appreciation')->group(function () {
