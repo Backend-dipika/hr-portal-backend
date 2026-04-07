@@ -18,6 +18,35 @@ use Illuminate\Support\Facades\Route;
 
 class LeaveRequestController extends Controller
 {
+    /**
+     * Get Leave Summary for a User
+     *
+     * Returns the leave balance summary for the authenticated user
+     * or for a specific employee (if employee_id is provided).
+     *
+     * @group Leave Management
+     *
+     * @authenticated
+     *
+     * @queryParam employee_id integer optional Employee ID (only for Admin/Super Admin). Example: 5
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "leaveSummary": [
+     *     {
+     *       "type": "Paid Leave",
+     *       "available": 10,
+     *       "annual": 20,
+     *       "consumed": 10
+     *     }
+     *   ]
+     * }
+     *
+     * @response 401 {
+     *   "success": false,
+     *   "message": "Unauthenticated"
+     * }
+     */
     public function leaveSummary(Request $request)  //leave balance summary for the user
     {
         Log::channel('daily')->info("📌 leaveSummary called");
@@ -64,7 +93,59 @@ class LeaveRequestController extends Controller
         ]);
     }
 
-
+    /**
+     * Apply for Leave
+     *
+     * Creates a new leave request for the authenticated user.
+     * Includes validation, duplicate checks, leave balance checks,
+     * and approval workflow assignment.
+     *
+     * @group Leave Management
+     *
+     * @authenticated
+     *
+     * @bodyParam leave_type_id integer required Leave type ID. Example: 1
+     * @bodyParam start_date date required Start date of leave. Example: 2026-04-10
+     * @bodyParam end_date date required End date of leave. Must be >= start_date. Example: 2026-04-12
+     * @bodyParam reason string optional Reason for leave. Example: Personal work
+     * @bodyParam half_day_type string optional Required if leave_type_id = 4. Values:first,second. Example: first
+     *
+     * @response 201 {
+     *   "message": "Leave request submitted successfully.",
+     *   "data": {
+     *     "id": 10,
+     *     "user_id": 5,
+     *     "leave_type_id": 1,
+     *     "start_date": "2026-04-10",
+     *     "end_date": "2026-04-12",
+     *     "status": "pending",
+     *     "total_days_requested": 3,
+     *     "total_days_approved": 0
+     *   }
+     * }
+     *
+     * @response 400 {
+     *   "message": "You already have a leave request for the selected date(s)."
+     * }
+     *
+     * @response 400 {
+     *   "message": "No leave balance record found for this leave type."
+     * }
+     *
+     * @response 400 {
+     *   "message": "You do not have enough remaining leave balance for this request.",
+     *   "remaining_days": 5,
+     *   "requested_days": 7
+     * }
+     *
+     * @response 401 {
+     *   "message": "Unauthenticated"
+     * }
+     *
+     * @response 422 {
+     *   "message": "The given data was invalid."
+     * }
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -208,8 +289,49 @@ class LeaveRequestController extends Controller
         ], 201);
     }
 
-
-
+    /**
+     * Cancel Leave Request
+     *
+     * Allows an authenticated user to cancel their own leave request.
+     *
+     * Conditions:
+     * - User can only cancel their own leave
+     * - Leave must NOT be already:
+     *      - Approved
+     *      - Rejected
+     *      - Cancelled
+     *
+     * On success:
+     * - Leave status is updated to "cancelled"
+     * - Pending approvers are notified
+     *
+     * @group Leave Management
+     *
+     * @authenticated
+     *
+     * @urlParam leaveId integer required ID of the leave request. Example: 10
+     *
+     * @response 200 {
+     *   "message": "Leave has been cancelled successfully.",
+     *   "data": {
+     *     "id": 10,
+     *     "status": "cancelled",
+     *     "is_cancel_request": true
+     *   }
+     * }
+     *
+     * @response 400 {
+     *   "message": "Cannot cancel leave that is already approved, rejected, or cancelled."
+     * }
+     *
+     * @response 404 {
+     *   "message": "Leave request not found or you are not authorized."
+     * }
+     *
+     * @response 401 {
+     *   "message": "Unauthenticated"
+     * }
+     */
     public function cancelLeave(Request $request, $leaveId)
     {
         $user = Auth::user();
@@ -282,6 +404,64 @@ class LeaveRequestController extends Controller
         ], 200);
     }
 
+    /**
+     * Approve Leave Request
+     *
+     * Allows an authorized approver to approve a leave request at their assigned level.
+     *
+     * Workflow:
+     * - Each leave has multi-level approvals
+     * - Approver can approve only if assigned
+     * - If other approvals are pending → partial approval
+     * - If all approvals completed → final approval
+     *
+     * Final Approval Effects:
+     * - Deducts leave balance from user's account
+     * - Updates leave status to "approved"
+     * - Sends notification to user
+     *
+     * Special Rule:
+     * - Half-day leaves always deduct from "Paid Leave"
+     *
+     * @group Leave Management
+     *
+     * @authenticated
+     *
+     * @urlParam id integer required Leave request ID. Example: 10
+     *
+     * @response 200 {
+     *   "message": "Leave approved successfully.",
+     *   "data": {
+     *     "id": 10,
+     *     "status": "approved",
+     *     "total_days_approved": 2
+     *   }
+     * }
+     *
+     * @response 200 {
+     *   "message": "Leave approved at your level. Awaiting other approvals.",
+     *   "data": {
+     *     "id": 10,
+     *     "status": "pending"
+     *   }
+     * }
+     *
+     * @response 400 {
+     *   "message": "Leave already processed."
+     * }
+     *
+     * @response 400 {
+     *   "message": "Not enough leave balance."
+     * }
+     *
+     * @response 403 {
+     *   "message": "No approval record found for your level."
+     * }
+     *
+     * @response 401 {
+     *   "message": "Unauthenticated"
+     * }
+     */
     public function approveLeave(Request $request, $id)
     {
         $leaveRequest = LeaveRequest::findOrFail($id);
@@ -373,9 +553,45 @@ class LeaveRequestController extends Controller
         ]);
     }
 
-
     /**
-     * Reject a leave request (any level)
+     * Reject Leave Request
+     *
+     * Allows an authorized approver to reject a leave request.
+     *
+     * Behavior:
+     * - Only pending leave requests can be rejected
+     * - Rejecting at any level immediately:
+     *      - Marks leave as "rejected"
+     *      - Stops further approval flow
+     * - Updates approver record (if exists)
+     * - Sends rejection notification to user
+     *
+     * @group Leave Management
+     *
+     * @authenticated
+     *
+     * @urlParam id integer required Leave request ID. Example: 10
+     *
+     * @response 200 {
+     *   "message": "Leave rejected successfully.",
+     *   "data": {
+     *     "id": 10,
+     *     "status": "rejected",
+     *     "total_days_approved": 0
+     *   }
+     * }
+     *
+     * @response 400 {
+     *   "message": "Leave already processed."
+     * }
+     *
+     * @response 403 {
+     *   "message": "No approval record found for approver."
+     * }
+     *
+     * @response 401 {
+     *   "message": "Unauthenticated"
+     * }
      */
     public function rejectLeave(Request $request, $id)
     {
@@ -452,6 +668,65 @@ class LeaveRequestController extends Controller
         ]);
     }
 
+    /**
+     * Get Leave Requests (Role-Based)
+     *
+     * Fetch leave requests based on the authenticated user's role.
+     *
+     * - **Admin**: Can view leave requests where they are assigned as Level 2 approver.
+     * - **Super Admin**: Can view:
+     *      - All Level 1 approvals
+     *      - OR leave requests where Level 2 is already approved
+     *      - OR leave requests submitted by Admin users
+     *
+     *
+     * @group Leave Management
+     *
+     * @authenticated
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "data": [
+     *     {
+     *       "id": 1,
+     *       "employee_name": "John Doe",
+     *       "leave_type": "Paid Leave",
+     *       "duration_type": "full_day",
+     *       "start_date": "01/04",
+     *       "end_date": "03/04",
+     *       "reason": "Personal work",
+     *       "status": "pending",
+     *       "total_days_requested": 3,
+     *       "total_days_approved": 0,
+     *       "created_at": "2026-03-30 10:30",
+     *       "approvals": [
+     *         {
+     *           "id": 10,
+     *           "level": 1,
+     *           "approver_id": 5,
+     *           "status": "pending",
+     *           "approved_on": null
+     *         }
+     *       ]
+     *     }
+     *   ]
+     * }
+     *
+     * @response 401 {
+     *   "success": false,
+     *   "message": "Unauthenticated"
+     * }
+     *
+     * @response 403 {
+     *   "success": false,
+     *   "message": "Unauthorized to view leave requests"
+     * }
+     *
+     * @response 500 {
+     *   "success": false,
+     *   "message": "Server error while fetching leave requests"
+     * }
+     */
     public function index()
     {
         // Basic request info
@@ -571,7 +846,7 @@ class LeaveRequestController extends Controller
                             'level' => $app->level ?? null,
                             'approver_id' => $app->approver_id ?? null,
                             'status' => $app->status ?? null,
-                            'approved_on' => $app->approved_on ? \Carbon\Carbon::parse($app->approved_on)->format('Y-m-d H:i') : null,
+                            'approved_on' => $app->approved_on ? \Carbon\Carbon::parse($app->approved_on)->format('Y-m-d H:i') : "",
                         ]);
                     }
                 }
@@ -579,15 +854,15 @@ class LeaveRequestController extends Controller
                 return [
                     'id' => $leave->id,
                     'employee_name' => trim(($leave->user?->first_name ?? '') . ' ' . ($leave->user?->last_name ?? '')) ?: 'Unknown',
-                    'leave_type' => $leave->leaveType?->name ?? 'N/A',
-                    'duration_type' => $leave->duration_type,
-                    'start_date' => $leave->start_date ? \Carbon\Carbon::parse($leave->start_date)->format('d/m') : null,
-                    'end_date' => $leave->end_date ? \Carbon\Carbon::parse($leave->end_date)->format('d/m') : null,
-                    'reason' => $leave->reason,
-                    'status' => $leave->status,
-                    'total_days_requested' => $leave->total_days_requested,
-                    'total_days_approved' => $leave->total_days_approved,
-                    'created_at' => $leave->created_at ? \Carbon\Carbon::parse($leave->created_at)->format('Y-m-d H:i') : null,
+                    'leave_type' => $leave->leaveType?->name ?? "",
+                    'duration_type' => $leave->duration_type ?? "",
+                    'start_date' => $leave->start_date ? \Carbon\Carbon::parse($leave->start_date)->format('d/m') : "",
+                    'end_date' => $leave->end_date ? \Carbon\Carbon::parse($leave->end_date)->format('d/m') : "",
+                    'reason' => $leave->reason ?? "",
+                    'status' => $leave->status ?? "",
+                    'total_days_requested' => $leave->total_days_requested ?? "",
+                    'total_days_approved' => $leave->total_days_approved ?? "",
+                    'created_at' => $leave->created_at ? \Carbon\Carbon::parse($leave->created_at)->format('Y-m-d H:i') : "",
 
                     // ⚡ Include approvals for frontend
                     'approvals' => $leave->approvals->map(function ($app) {
@@ -596,7 +871,7 @@ class LeaveRequestController extends Controller
                             'level' => $app->level,
                             'approver_id' => $app->approver_id,
                             'status' => $app->status,
-                            'approved_on' => $app->approved_on ? \Carbon\Carbon::parse($app->approved_on)->format('Y-m-d H:i') : null,
+                            'approved_on' => $app->approved_on ? \Carbon\Carbon::parse($app->approved_on)->format('Y-m-d H:i') : "",
                         ];
                     }),
                 ];
@@ -623,7 +898,51 @@ class LeaveRequestController extends Controller
         }
     }
 
-
+    /**
+     * Get User Leave Requests
+     *
+     * Fetch all leave requests for a specific user.
+     *
+     * - By default, returns leave requests of the **authenticated user**
+     * - **Admin / Super Admin** can fetch leave requests of other users using `employee_id`
+     *
+     * @group Leave Management
+     *
+     * @authenticated
+     *
+     * @queryParam employee_id integer optional Employee ID (Admin/Super Admin only).
+     * Example: 5
+     *
+     * @response 200 {
+     *   "success": true,
+     *   "data": [
+     *     {
+     *       "id": 1,
+     *       "leave_type": "Paid Leave",
+     *       "start_date": "2026-04-01",
+     *       "end_date": "2026-04-03",
+     *       "applied_on": "2026-03-30",
+     *       "reason": "Personal work",
+     *       "status": "pending",
+     *       "total_days_requested": 3,
+     *       "total_days_approved": 0,
+     *       "approvals": [
+     *         {
+     *           "level": 1,
+     *           "approver_name": "John Doe",
+     *           "status": "pending",
+     *           "approved_on": null
+     *         }
+     *       ]
+     *     }
+     *   ]
+     * }
+     *
+     * @response 401 {
+     *   "success": false,
+     *   "message": "Unauthenticated"
+     * }
+     */
     public function userLeaves(Request $request)
     {
         $user = Auth::user();
@@ -665,9 +984,57 @@ class LeaveRequestController extends Controller
         return response()->json(['success' => true, 'data' => $leaves]);
     }
 
-
     /**
-     * Show status of a single leave request for authenticated user
+     * Get Leave Status
+     *
+     * Fetch detailed information about a specific leave request
+     * for the authenticated user, including the approval workflow.
+     *
+     * - Returns leave details (type, dates, reason, status)
+     * - Includes multi-level approval chain
+     * - Ensures user can only access their own leave
+     *
+     * @group Leave Management
+     *
+     * @authenticated
+     *
+     * @urlParam id integer required Leave request ID. Example: 10
+     *
+     * @response 200 {
+     *   "leave_request": {
+     *     "id": 10,
+     *     "leave_type": "Paid Leave",
+     *     "start_date": "2026-04-01",
+     *     "end_date": "2026-04-03",
+     *     "reason": "Personal work",
+     *     "status": "approved",
+     *     "total_days_requested": 3,
+     *     "total_days_approved": 3,
+     *     "approved_on": "2026-04-01 10:30"
+     *   },
+     *   "approvals": [
+     *     {
+     *       "level": 1,
+     *       "approver_name": "Manager Name",
+     *       "status": "approved",
+     *       "approved_on": "2026-04-01 09:00"
+     *     },
+     *     {
+     *       "level": 2,
+     *       "approver_name": "Admin Name",
+     *       "status": "approved",
+     *       "approved_on": "2026-04-01 10:30"
+     *     }
+     *   ]
+     * }
+     *
+     * @response 404 {
+     *   "message": "Leave not found"
+     * }
+     *
+     * @response 401 {
+     *   "message": "Unauthenticated"
+     * }
      */
     public function leaveStatus($id)
     {
@@ -705,38 +1072,38 @@ class LeaveRequestController extends Controller
         ]);
     }
 
-    public function approvalHistory()
-    {
-        $user = Auth::user();
+    // public function approvalHistory()
+    // {
+    //     $user = Auth::user();
 
-        $leaves = LeaveRequest::with(['user', 'leaveType', 'approvals'])
-            ->whereHas('approvals', function ($q) use ($user) {
-                $q->where('approver_id', $user->id);
-            })
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($leave) {
-                return [
-                    'id' => $leave->id,
-                    'employee_name' => trim(($leave->user?->first_name ?? '') . ' ' . ($leave->user?->last_name ?? '')) ?: 'Unknown',
-                    'leave_type' => $leave->leaveType?->name ?? 'N/A',
-                    'start_date' => $leave->start_date ? Carbon::parse($leave->start_date)->format('d/m') : null,
-                    'end_date' => $leave->end_date ? Carbon::parse($leave->end_date)->format('d/m') : null,
-                    'status' => $leave->status,
-                    'approvals' => $leave->approvals->map(function ($app) {
-                        return [
-                            'level' => $app->level,
-                            'approver_name' => trim(($app->approver?->first_name ?? '') . ' ' . ($app->approver?->last_name ?? '')) ?: 'Pending',
-                            'status' => $app->status,
-                            'approved_on' => $app->approved_on ? Carbon::parse($app->approved_on)->format('Y-m-d H:i') : null,
-                        ];
-                    })->sortBy('level')->values(),
-                ];
-            });
+    //     $leaves = LeaveRequest::with(['user', 'leaveType', 'approvals'])
+    //         ->whereHas('approvals', function ($q) use ($user) {
+    //             $q->where('approver_id', $user->id);
+    //         })
+    //         ->orderBy('created_at', 'desc')
+    //         ->get()
+    //         ->map(function ($leave) {
+    //             return [
+    //                 'id' => $leave->id,
+    //                 'employee_name' => trim(($leave->user?->first_name ?? '') . ' ' . ($leave->user?->last_name ?? '')) ?: 'Unknown',
+    //                 'leave_type' => $leave->leaveType?->name ?? 'N/A',
+    //                 'start_date' => $leave->start_date ? Carbon::parse($leave->start_date)->format('d/m') : null,
+    //                 'end_date' => $leave->end_date ? Carbon::parse($leave->end_date)->format('d/m') : null,
+    //                 'status' => $leave->status,
+    //                 'approvals' => $leave->approvals->map(function ($app) {
+    //                     return [
+    //                         'level' => $app->level,
+    //                         'approver_name' => trim(($app->approver?->first_name ?? '') . ' ' . ($app->approver?->last_name ?? '')) ?: 'Pending',
+    //                         'status' => $app->status,
+    //                         'approved_on' => $app->approved_on ? Carbon::parse($app->approved_on)->format('Y-m-d H:i') : null,
+    //                     ];
+    //                 })->sortBy('level')->values(),
+    //             ];
+    //         });
 
-        return response()->json([
-            'success' => true,
-            'data' => $leaves
-        ]);
-    }
+    //     return response()->json([
+    //         'success' => true,
+    //         'data' => $leaves
+    //     ]);
+    // }
 }

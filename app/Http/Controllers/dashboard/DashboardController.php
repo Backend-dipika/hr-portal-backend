@@ -11,6 +11,46 @@ use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
+    /**
+     * Get Upcoming Birthdays and Work Anniversaries
+     *
+     * Fetch users whose:
+     * - Birthday OR
+     * - Work anniversary (date of joining)
+     * falls within the next 10 days from today.
+     *
+     *
+     * @group Dashboard
+     *
+     * @authenticated
+     *
+     * @response 200 {
+     *   "status": "success",
+     *   "birthdays": [
+     *     {
+     *       "id": 1,
+     *       "first_name": "Aarti",
+     *       "last_name": "Sharma",
+     *       "profile_picture": "users/profile1.jpg",
+     *       "date_of_birth": "1995-04-10"
+     *     }
+     *   ],
+     *   "anniversaries": [
+     *     {
+     *       "id": 2,
+     *       "first_name": "Rahul",
+     *       "last_name": "Verma",
+     *       "profile_picture": "users/profile2.jpg",
+     *       "date_of_joining": "2020-04-12"
+     *     }
+     *   ]
+     * }
+     *
+     * @response 500 {
+     *   "status": "error",
+     *   "message": "An error occurred fetching birthdays and anniversaries"
+     * }
+     */
     public function showbirthdayAnniversaries()
     {
         try {
@@ -47,6 +87,42 @@ class DashboardController extends Controller
         }
     }
 
+    /**
+     * Get Employees on Leave This Week
+     *
+     * Fetch all employees who are on approved leave during the current week.
+     *
+     * Includes:
+     * - Employee basic details
+     * - Leave request data
+     *
+     * @group Dashboard
+     *
+     * @authenticated
+     *
+     * @response 200 {
+     *   "status": "success",
+     *   "on_leave": [
+     *     {
+     *       "id": 10,
+     *       "user": {
+     *         "id": 5,
+     *         "first_name": "John",
+     *         "last_name": "Doe",
+     *         "profile_picture": "users/profile.jpg"
+     *       },
+     *       "start_date": "2026-04-07",
+     *       "end_date": "2026-04-10",
+     *       "status": "approved"
+     *     }
+     *   ]
+     * }
+     *
+     * @response 500 {
+     *   "status": "error",
+     *   "message": "An error occurred fetching employees on leave"
+     * }
+     */
     public function showOffThisWeekEmployees()
     {
         try {
@@ -82,10 +158,36 @@ class DashboardController extends Controller
         }
     }
 
+    /**
+     * Get Dashboard Statistics
+     *
+     * Fetch key metrics for dashboard display:
+     * - Total number of employees
+     * - Number of employees currently on approved leave (today)
+     * - Total number of departments
+     *
+     * @group Dashboard
+     *
+     * @authenticated
+     *
+     * @response 200 {
+     *   "status": "success",
+     *   "data": {
+     *     "total_employees": 50,
+     *     "approved_leaves": 5,
+     *     "departments": 6
+     *   }
+     * }
+     *
+     * @response 500 {
+     *   "status": "error",
+     *   "message": "An error occurred fetching statistics"
+     * }
+     */
     public function showStatsComponentData()
     {
         try {
-            $today = Carbon::today()->toDateString(); 
+            $today = Carbon::today()->toDateString();
             $usersCount = User::count();
             $approvedLeavesCount = LeaveRequest::where('status', 'approved')
                 ->whereDate('start_date', '<=', $today)

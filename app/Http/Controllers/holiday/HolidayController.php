@@ -13,6 +13,53 @@ use Illuminate\Support\Str;
 
 class HolidayController extends Controller
 {
+    /**
+     * Add Holidays (Bulk)
+     *
+     * Create one or multiple holidays in a single request.
+     *
+     * - Accepts an array of holidays
+     * - Automatically determines the day (Monday, Tuesday, etc.)
+     * - Stores each holiday with a unique UUID
+     *
+     * @group Holiday Management
+     *
+     * @authenticated
+     *
+     * @bodyParam holidays array required List of holidays to add.
+     * @bodyParam holidays[].date date required Holiday date (YYYY-MM-DD). Example: 2026-01-26
+     * @bodyParam holidays[].name string required Holiday name. Example: Republic Day
+     *
+     *  Example:
+     * [
+     *   {
+     *     "date": "2026-01-26",
+     *     "name": "Republic Day"
+     *   },
+     *   {
+     *     "date": "2026-08-15",
+     *     "name": "Independence Day"
+     *   }
+     * ]
+     *
+     * @response 200 {
+     *   "status": true,
+     *   "message": "Holidays added successfully"
+     * }
+     *
+     * @response 422 {
+     *   "status": false,
+     *   "message": "Validation failed",
+     *   "errors": {
+     *     "holidays.0.date": ["The date field is required."]
+     *   }
+     * }
+     *
+     * @response 500 {
+     *   "status": false,
+     *   "message": "An error occurred while responding to holidays creation"
+     * }
+     */
     public function addHolidays(Request $request)
     {
         Log::info('Holiday request data:', $request->all());
@@ -59,6 +106,35 @@ class HolidayController extends Controller
         }
     }
 
+    /**
+     * Get Holiday List (Current Year)
+     *
+     * Fetch all holidays for the current year.
+     *
+     * - Filters holidays based on current year
+     * - Sorted by date (ascending)
+     *
+     * @group Holiday Management
+     *
+     * @authenticated
+     *
+     * @response 200 {
+     *   "status": true,
+     *   "data": [
+     *     {
+     *       "id": 1,
+     *       "name": "Republic Day",
+     *       "day": "Monday",
+     *       "start_date": "2026-01-26"
+     *     }
+     *   ]
+     * }
+     *
+     * @response 500 {
+     *   "status": false,
+     *   "message": "An error occurred fetching holidays details"
+     * }
+     */
     public function showHolidayList()
     {
         try {
@@ -82,6 +158,32 @@ class HolidayController extends Controller
         }
     }
 
+    /**
+     * Delete Holiday
+     *
+     * Delete a holiday by its ID.
+     *
+     * @group Holiday Management
+     *
+     * @authenticated
+     *
+     * @urlParam id integer required Holiday ID. Example: 1
+     *
+     * @response 200 {
+     *   "status": true,
+     *   "message": "Holiday deleted successfully"
+     * }
+     *
+     * @response 404 {
+     *   "status": false,
+     *   "message": "Holiday not found"
+     * }
+     *
+     * @response 500 {
+     *   "status": false,
+     *   "message": "An error occurred while deleting the holiday"
+     * }
+     */
     public function deleteHoliday($id)
     {
         try {
@@ -110,6 +212,46 @@ class HolidayController extends Controller
         }
     }
 
+    /**
+     * Update Holiday
+     *
+     * Update an existing holiday's details.
+     *
+     * Features:
+     * - Updates holiday name and date
+     * - Automatically recalculates the day (Monday, Tuesday, etc.)
+     *
+     * @group Holiday Management
+     *
+     * @authenticated
+     *
+     * @bodyParam id integer required Holiday ID. Example: 1
+     * @bodyParam start_date date required New holiday date. Example: "2026-01-26"
+     * @bodyParam name string required Holiday name. Example: "Republic Day"
+     *
+     * @response 200 {
+     *   "status": true,
+     *   "message": "Holiday updated successfully"
+     * }
+     *
+     * @response 422 {
+     *   "status": false,
+     *   "message": "Validation failed",
+     *   "errors": {
+     *     "id": ["The selected id is invalid."]
+     *   }
+     * }
+     *
+     * @response 404 {
+     *   "status": false,
+     *   "message": "Holiday not found"
+     * }
+     *
+     * @response 500 {
+     *   "status": false,
+     *   "message": "An error occurred while updating the holiday"
+     * }
+     */
     public function updateHoliday(Request $request)
     {
         Log::info('Update Holiday request data:', $request->all());
