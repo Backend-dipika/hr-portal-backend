@@ -296,7 +296,7 @@ class RegistrationController extends Controller
      * @bodyParam employee_type_id integer nullable Example: 1
      * @bodyParam reporting_manager_id integer nullable Example: 5
      * @bodyParam current_location string nullable Example: Mumbai
-     * @bodyParam work_mode string nullable Example: remote
+     * @bodyParam work_mode string nullable Example: remote,onsite,hybrid
      *
      * @response 200 {
      *  "status": true,
