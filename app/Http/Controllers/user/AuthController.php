@@ -440,7 +440,7 @@ class AuthController extends Controller
      *
      * Returns basic details of the currently authenticated user.
      *
-     * @group User
+     * @group Authentication
      *
      * @authenticated
      *
