@@ -19,6 +19,48 @@ use Illuminate\Support\Facades\Validator;
 class ResignationController extends Controller
 {
 
+    /**
+     * Check If User Has Active Resignation
+     *
+     * Fetch the logged-in user's resignation request (if exists)
+     * with approval details.
+     *
+     * - Returns only pending or approved resignations
+     * - Includes approval chain with approver details
+     *
+     * @group Resignation Management
+     *
+     * @authenticated
+     *
+     * @response 200 {
+     *   "status": true,
+     *   "message": "Employee Resigned fetched successfully",
+     *   "data": {
+     *     "id": 1,
+     *     "type": "resignation",
+     *     "submission_date": "2026-04-01",
+     *     "final_status": "pending",
+     *     "notice_period_end_date": "2026-05-01",
+     *     "approvals": [
+     *       {
+     *         "approver_id": 2,
+     *         "approval_status": "pending",
+     *         "approval_date": null,
+     *         "approver": {
+     *           "first_name": "John",
+     *           "last_name": "Doe"
+     *         }
+     *       }
+     *     ]
+     *   }
+     * }
+     *
+     * @response 200 {
+     *   "status": true,
+     *   "message": "No resignation found for the user",
+     *   "data": null
+     * }
+     */
     public function checkIfResigned() //to show resignation for or related details on frontend
     {
         Log::info('checkIfResigned called');
@@ -59,6 +101,41 @@ class ResignationController extends Controller
         }
     }
 
+    /**
+     * Get All Resigned Employees (Pending)
+     *
+     * Fetch all employees who have submitted resignation requests
+     * with pending status along with approval workflow.
+     *
+     * @group Resignation Management
+     *
+     * @authenticated
+     *
+     * @response 200 {
+     *   "status": true,
+     *   "message": "Resigned employees fetched successfully",
+     *   "data": [
+     *     {
+     *       "id": 1,
+     *       "user": {
+     *         "first_name": "John",
+     *         "last_name": "Doe",
+     *         "office_email": "john@example.com",
+     *         "department": {
+     *           "name": "IT"
+     *         }
+     *       },
+     *       "final_status": "pending",
+     *       "approvals": [
+     *         {
+     *           "approval_order": 1,
+     *           "approval_status": "pending"
+     *         }
+     *       ]
+     *     }
+     *   ]
+     * }
+     */
     public function  showResignedEmployees()
     {
         try {
@@ -95,6 +172,35 @@ class ResignationController extends Controller
         }
     }
 
+    /**
+     * Initiate Resignation
+     *
+     * Submit a resignation request for an employee.
+     *
+     * - Automatically assigns approvers (Manager → CEO)
+     * - Calculates notice period (1 month)
+     * - Supports optional document upload
+     *
+     * @group Resignation Management
+     *
+     * @authenticated
+     *
+     * @bodyParam user_id integer required Employee ID. Example: 5
+     * @bodyParam resigned_on date required Resignation date. Example: 2026-04-01
+     * @bodyParam reason string required Reason for resignation. Example: Personal reasons
+     * @bodyParam message string optional Additional message. Example: Thank you for the opportunity
+     * @bodyParam attachment file optional Supporting document (PDF/DOC)
+     *
+     * @response 200 {
+     *   "status": true,
+     *   "message": "Resignation initiated successfully"
+     * }
+     *
+     * @response 422 {
+     *   "status": false,
+     *   "message": "Validation failed"
+     * }
+     */
     public function initiateResignation(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -206,6 +312,35 @@ class ResignationController extends Controller
         }
     }
 
+    /**
+     * Respond to Resignation (Approve / Reject)
+     *
+     * Allows an approver (Manager/CEO) to take action on a resignation.
+     *
+     * - Multi-level approval supported
+     * - Manager approval triggers CEO approval
+     * - Final approval updates employee separation status
+     *
+     * @group Resignation Management
+     *
+     * @authenticated
+     *
+     * @bodyParam resignation_id integer required Resignation ID. Example: 10
+     * @bodyParam employee_id integer required Employee ID. Example: 5
+     * @bodyParam action string required Action to take (approved/rejected). Example: approved
+     * @bodyParam approver_id integer required Approver ID. Example: 2
+     * @bodyParam approval_order integer required Approval level (1=Manager, 2=CEO). Example: 1
+     *
+     * @response 200 {
+     *   "status": true,
+     *   "message": "Responded to resignation successfully"
+     * }
+     *
+     * @response 422 {
+     *   "status": false,
+     *   "message": "Validation failed"
+     * }
+     */
     public function responseToResignation(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -314,6 +449,32 @@ class ResignationController extends Controller
         }
     }
 
+    /**
+     * Cancel Resignation
+     *
+     * Allows an employee to cancel their resignation request.
+     *
+     * - Updates resignation status to cancelled
+     * - Deletes approval records
+     * - Restores employee active status
+     *
+     * @group Resignation Management
+     *
+     * @authenticated
+     *
+     * @bodyParam user_id integer required Employee ID. Example: 5
+     * @bodyParam resignation_id integer required Resignation ID. Example: 10
+     *
+     * @response 200 {
+     *   "status": true,
+     *   "message": "Resignation cancelled successfully"
+     * }
+     *
+     * @response 422 {
+     *   "status": false,
+     *   "message": "Validation failed"
+     * }
+     */
     public function cancelResignation(Request $request)
     {
         Log::info('incomng request', $request->all());

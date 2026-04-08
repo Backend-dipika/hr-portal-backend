@@ -16,6 +16,38 @@ use PhpParser\Node\Stmt\TryCatch;
 
 class YearEndLeaveController extends Controller
 {
+    /**
+     * Check Year-End Leave Process Eligibility
+     *
+     * Determine whether the authenticated user has any pending
+     * year-end leave actions to process.
+     *
+     * - Returns eligible (submitted but not closed) record
+     * - Returns all past processed records
+     *
+     * @group Year-End Leave Management
+     *
+     * @authenticated
+     *
+     * @response 200 {
+     *   "status": "success",
+     *   "message": "Year-end process check completed.",
+     *   "data": {
+     *     "eligible": {
+     *       "id": 1,
+     *       "days": 5,
+     *       "status": "submitted",
+     *       "is_closed": false
+     *     },
+     *     "all_records": []
+     *   }
+     * }
+     *
+     * @response 500 {
+     *   "status": "false",
+     *   "message": "An error occurred while checking year-end process."
+     * }
+     */
     public function checkIfYearEndProcessNeeded()
     {
         try {
@@ -44,6 +76,37 @@ class YearEndLeaveController extends Controller
         }
     }
 
+    /**
+     * Update Year-End Leave Action
+     *
+     * Process year-end leave action for an employee.
+     *
+     * - Option: carry_forward → adds leave balance
+     * - Option: encash → sends request to admin for approval
+     *
+     * @group Year-End Leave Management
+     *
+     * @authenticated
+     *
+     * @bodyParam id integer required Leave Year-End Action ID. Example: 10
+     * @bodyParam option string required Action type (carry_forward or encash). Example: carry_forward
+     * @bodyParam remarks string optional Remarks for action. Example: Carry forward remaining leaves
+     *
+     * @response 200 {
+     *   "status": "success",
+     *   "message": "Year-end action updated successfully."
+     * }
+     *
+     * @response 422 {
+     *   "status": "error",
+     *   "message": ["The option field is required."]
+     * }
+     *
+     * @response 404 {
+     *   "status": "error",
+     *   "message": "Leave year-end action not found."
+     * }
+     */
     public function updateYearEndAction(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -105,6 +168,44 @@ class YearEndLeaveController extends Controller
         }
     }
 
+    /**
+     * Get Pending Year-End Approval Requests
+     *
+     * Fetch all pending encashment requests that require admin approval.
+     *
+     * - Includes employee details (department, designation)
+     * - Only returns pending & not closed records
+     *
+     * @group Year-End Leave Management
+     *
+     * @authenticated
+     *
+     * @response 200 {
+     *   "status": "true",
+     *   "data": [
+     *     {
+     *       "id": 1,
+     *       "days": 5,
+     *       "status": "pending",
+     *       "user": {
+     *         "first_name": "John",
+     *         "last_name": "Doe",
+     *         "department": {
+     *           "name": "IT"
+     *         },
+     *         "designation": {
+     *           "name": "Developer"
+     *         }
+     *       }
+     *     }
+     *   ]
+     * }
+     *
+     * @response 500 {
+     *   "status": "false",
+     *   "message": "An error occurred while fetching approval requests."
+     * }
+     */
     public function showApprovalRequests()
     {
         try {
@@ -124,6 +225,42 @@ class YearEndLeaveController extends Controller
         }
     }
 
+    /**
+     * Respond to Encashment Request
+     *
+     * Allows admin to approve or reject leave encashment requests.
+     *
+     * - Approved → marks request as closed and notifies employee
+     * - Rejected → converts leave into carry forward
+     *
+     * @group Year-End Leave Management
+     *
+     * @authenticated
+     *
+     * @bodyParam id integer required Leave Year-End Action ID. Example: 10
+     * @bodyParam action string required Action to take (approved or rejected). Example: approved
+     * @bodyParam amount number optional Encashment amount. Example: 5000
+     *
+     * @response 200 {
+     *   "status": "success",
+     *   "message": "Year-end action updated successfully."
+     * }
+     *
+     * @response 422 {
+     *   "status": "false",
+     *   "message": ["The action field is required."]
+     * }
+     *
+     * @response 404 {
+     *   "status": "error",
+     *   "message": "Leave year-end action not found."
+     * }
+     *
+     * @response 500 {
+     *   "status": "false",
+     *   "message": "An error occurred while updating year-end action."
+     * }
+     */
     public function saveResponseForEncashment(Request $request)
     {
         $validator = Validator::make($request->all(), [
