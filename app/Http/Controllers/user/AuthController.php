@@ -7,6 +7,7 @@ use App\Models\otp;
 use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -434,11 +435,38 @@ class AuthController extends Controller
         }
     }
 
+    /**
+     * Get Authenticated User Details
+     *
+     * Returns basic details of the currently authenticated user.
+     *
+     * @group User
+     *
+     * @authenticated
+     *
+     * @response 200 {
+     *   "id": 1,
+     *   "role": 2,
+     *   "role_name": "Admin",
+     *   "uuid": "c1a2b3c4-5678-90ab-cdef-1234567890ab",
+     *   "first_name": "John",
+     *   "last_name": "Doe"
+     * }
+     *
+     * @response 401 {
+     *   "error": "User not authenticated"
+     * }
+     *
+     * @response 500 {
+     *   "error": "Something went wrong while fetching user details"
+     * }
+     */
     public function sendUserDetails(Request $request)
     {
         try {
             Log::info('inside get user info');
-            $user = $request->user();
+            // $user = $request->user();
+            $user = Auth::user();
 
             if (!$user) {
                 return response()->json([
@@ -449,7 +477,11 @@ class AuthController extends Controller
             return response()->json([
                 'id' => $user->id,
                 'role' => $user->role_id,
+                'role_name' => optional($user->role)->name,
                 'uuid' => $user->uuid,
+                'first_name' => $user->first_name,
+                'last_name' => $user->last_name,
+
             ], 200);
         } catch (\Exception $e) {
             // Log the error with stack trace

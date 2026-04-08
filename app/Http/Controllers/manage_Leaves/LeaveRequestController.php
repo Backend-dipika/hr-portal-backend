@@ -313,11 +313,6 @@ class LeaveRequestController extends Controller
      *
      * @response 200 {
      *   "message": "Leave has been cancelled successfully.",
-     *   "data": {
-     *     "id": 10,
-     *     "status": "cancelled",
-     *     "is_cancel_request": true
-     *   }
      * }
      *
      * @response 400 {
@@ -400,7 +395,7 @@ class LeaveRequestController extends Controller
 
         return response()->json([
             'message' => 'Leave has been cancelled successfully.',
-            'data' => $leaveRequest
+            // 'data' => $leaveRequest
         ], 200);
     }
 
@@ -431,19 +426,10 @@ class LeaveRequestController extends Controller
      *
      * @response 200 {
      *   "message": "Leave approved successfully.",
-     *   "data": {
-     *     "id": 10,
-     *     "status": "approved",
-     *     "total_days_approved": 2
-     *   }
      * }
      *
      * @response 200 {
      *   "message": "Leave approved at your level. Awaiting other approvals.",
-     *   "data": {
-     *     "id": 10,
-     *     "status": "pending"
-     *   }
      * }
      *
      * @response 400 {
@@ -498,7 +484,7 @@ class LeaveRequestController extends Controller
         if ($anyPending) {
             return response()->json([
                 'message' => 'Leave approved at your level. Awaiting other approvals.',
-                'data' => $leaveRequest,
+                // 'data' => $leaveRequest,
             ]);
         }
 
@@ -549,7 +535,6 @@ class LeaveRequestController extends Controller
 
         return response()->json([
             'message' => 'Leave approved successfully.',
-            'data' => $leaveRequest,
         ]);
     }
 
@@ -574,11 +559,6 @@ class LeaveRequestController extends Controller
      *
      * @response 200 {
      *   "message": "Leave rejected successfully.",
-     *   "data": {
-     *     "id": 10,
-     *     "status": "rejected",
-     *     "total_days_approved": 0
-     *   }
      * }
      *
      * @response 400 {
@@ -664,7 +644,7 @@ class LeaveRequestController extends Controller
 
         return response()->json([
             'message' => 'Leave rejected successfully.',
-            'data' => $leaveRequest,
+            // 'data' => $leaveRequest,
         ]);
     }
 
@@ -962,20 +942,20 @@ class LeaveRequestController extends Controller
             ->map(function ($leave) {
                 return [
                     'id' => $leave->id,
-                    'leave_type' => $leave->leaveType?->name ?? 'N/A',
+                    'leave_type' => $leave->leaveType?->name ?? "",
                     'start_date' => Carbon::parse($leave->start_date)->format('Y-m-d'),
                     'end_date' => Carbon::parse($leave->end_date)->format('Y-m-d'),
                     'applied_on' => Carbon::parse($leave->created_at)->format('Y-m-d'), // ← only date
-                    'reason' => $leave->reason,
+                    'reason' => $leave->reason??"",
                     'status' => $leave->status,
                     'total_days_requested' => $leave->total_days_requested,
-                    'total_days_approved' => $leave->total_days_approved,
+                    'total_days_approved' => $leave->total_days_approved??"",
                     'approvals' => $leave->approvals->map(function ($approval) {
                         return [
                             'level' => $approval->level,
                             'approver_name' => trim(($approval->approver?->first_name ?? '') . ' ' . ($approval->approver?->last_name ?? '')) ?: 'Pending',
                             'status' => $approval->status,
-                            'approved_on' => $approval->approved_on ? Carbon::parse($approval->approved_on)->format('Y-m-d H:i') : null,
+                            'approved_on' => $approval->approved_on ? Carbon::parse($approval->approved_on)->format('Y-m-d H:i') : "",
                         ];
                     })->sortBy('level')->values(),
                 ];
@@ -1052,21 +1032,21 @@ class LeaveRequestController extends Controller
         return response()->json([
             'leave_request' => [
                 'id' => $leave->id,
-                'leave_type' => $leave->leaveType?->name ?? 'N/A',
+                'leave_type' => $leave->leaveType?->name ?? "",
                 'start_date' => Carbon::parse($leave->start_date)->format('Y-m-d'),
                 'end_date' => Carbon::parse($leave->end_date)->format('Y-m-d'),
-                'reason' => $leave->reason,
+                'reason' => $leave->reason??"",
                 'status' => $leave->status,
                 'total_days_requested' => $leave->total_days_requested,
                 'total_days_approved' => $leave->total_days_approved,
-                'approved_on' => $leave->approved_on ? Carbon::parse($leave->approved_on)->format('Y-m-d H:i') : null,
+                'approved_on' => $leave->approved_on ? Carbon::parse($leave->approved_on)->format('Y-m-d H:i') : "",
             ],
             'approvals' => $leave->approvals->map(function ($approval) {
                 return [
                     'level' => $approval->level,
                     'approver_name' => trim(($approval->approver?->first_name ?? '') . ' ' . ($approval->approver?->last_name ?? '')) ?: 'Pending',
                     'status' => $approval->status,
-                    'approved_on' => $approval->approved_on ? Carbon::parse($approval->approved_on)->format('Y-m-d H:i') : null,
+                    'approved_on' => $approval->approved_on ? Carbon::parse($approval->approved_on)->format('Y-m-d H:i') : "",
                 ];
             })->sortBy('level')->values(),
         ]);
