@@ -70,7 +70,7 @@ Route::middleware(['verify.tokens'])->group(function () {
     Route::post('/leaves', [LeaveRequestController::class, 'store']); //to apply for leave
     Route::get('/leave-requests', [LeaveRequestController::class, 'index']);
     Route::get('/my-leaves', [LeaveRequestController::class, 'userLeaves']); //all the leave request of user 
-    Route::get('/my-leaves/{id}/status', [LeaveRequestController::class, 'leaveStatus']);
+    // Route::get('/my-leaves/{id}/status', [LeaveRequestController::class, 'leaveStatus']);
     Route::prefix('leave')->group(function () {
         Route::post('/{id}/approve', [LeaveRequestController::class, 'approveLeave'])->name('leave.approve');
         Route::post('/{id}/reject', [LeaveRequestController::class, 'rejectLeave'])->name('leave.reject');

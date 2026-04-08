@@ -964,93 +964,93 @@ class LeaveRequestController extends Controller
         return response()->json(['success' => true, 'data' => $leaves]);
     }
 
-    /**
-     * Get Leave Status
-     *
-     * Fetch detailed information about a specific leave request
-     * for the authenticated user, including the approval workflow.
-     *
-     * - Returns leave details (type, dates, reason, status)
-     * - Includes multi-level approval chain
-     * - Ensures user can only access their own leave
-     *
-     * @group Leave Management
-     *
-     * @authenticated
-     *
-     * @urlParam id integer required Leave request ID. Example: 10
-     *
-     * @response 200 {
-     *   "leave_request": {
-     *     "id": 10,
-     *     "leave_type": "Paid Leave",
-     *     "start_date": "2026-04-01",
-     *     "end_date": "2026-04-03",
-     *     "reason": "Personal work",
-     *     "status": "approved",
-     *     "total_days_requested": 3,
-     *     "total_days_approved": 3,
-     *     "approved_on": "2026-04-01 10:30"
-     *   },
-     *   "approvals": [
-     *     {
-     *       "level": 1,
-     *       "approver_name": "Manager Name",
-     *       "status": "approved",
-     *       "approved_on": "2026-04-01 09:00"
-     *     },
-     *     {
-     *       "level": 2,
-     *       "approver_name": "Admin Name",
-     *       "status": "approved",
-     *       "approved_on": "2026-04-01 10:30"
-     *     }
-     *   ]
-     * }
-     *
-     * @response 404 {
-     *   "message": "Leave not found"
-     * }
-     *
-     * @response 401 {
-     *   "message": "Unauthenticated"
-     * }
-     */
-    public function leaveStatus($id)
-    {
-        $user = Auth::user();
+    // /**
+    //  * Get Leave Status
+    //  *
+    //  * Fetch detailed information about a specific leave request
+    //  * for the authenticated user, including the approval workflow.
+    //  *
+    //  * - Returns leave details (type, dates, reason, status)
+    //  * - Includes multi-level approval chain
+    //  * - Ensures user can only access their own leave
+    //  *
+    //  * @group Leave Management
+    //  *
+    //  * @authenticated
+    //  *
+    //  * @urlParam id integer required Leave request ID. Example: 10
+    //  *
+    //  * @response 200 {
+    //  *   "leave_request": {
+    //  *     "id": 10,
+    //  *     "leave_type": "Paid Leave",
+    //  *     "start_date": "2026-04-01",
+    //  *     "end_date": "2026-04-03",
+    //  *     "reason": "Personal work",
+    //  *     "status": "approved",
+    //  *     "total_days_requested": 3,
+    //  *     "total_days_approved": 3,
+    //  *     "approved_on": "2026-04-01 10:30"
+    //  *   },
+    //  *   "approvals": [
+    //  *     {
+    //  *       "level": 1,
+    //  *       "approver_name": "Manager Name",
+    //  *       "status": "approved",
+    //  *       "approved_on": "2026-04-01 09:00"
+    //  *     },
+    //  *     {
+    //  *       "level": 2,
+    //  *       "approver_name": "Admin Name",
+    //  *       "status": "approved",
+    //  *       "approved_on": "2026-04-01 10:30"
+    //  *     }
+    //  *   ]
+    //  * }
+    //  *
+    //  * @response 404 {
+    //  *   "message": "Leave not found"
+    //  * }
+    //  *
+    //  * @response 401 {
+    //  *   "message": "Unauthenticated"
+    //  * }
+    //  */
+    // public function leaveStatus($id)
+    // {
+    //     $user = Auth::user();
 
-        $leave = LeaveRequest::with(['leaveType', 'approvals.approver'])
-            ->where('id', $id)
-            ->where('user_id', $user->id)
-            ->first();
+    //     $leave = LeaveRequest::with(['leaveType', 'approvals.approver'])
+    //         ->where('id', $id)
+    //         ->where('user_id', $user->id)
+    //         ->first();
 
-        if (!$leave) {
-            return response()->json(['message' => 'Leave not found'], 404);
-        }
+    //     if (!$leave) {
+    //         return response()->json(['message' => 'Leave not found'], 404);
+    //     }
 
-        return response()->json([
-            'leave_request' => [
-                'id' => $leave->id,
-                'leave_type' => $leave->leaveType?->name ?? "",
-                'start_date' => Carbon::parse($leave->start_date)->format('Y-m-d'),
-                'end_date' => Carbon::parse($leave->end_date)->format('Y-m-d'),
-                'reason' => $leave->reason??"",
-                'status' => $leave->status,
-                'total_days_requested' => $leave->total_days_requested,
-                'total_days_approved' => $leave->total_days_approved,
-                'approved_on' => $leave->approved_on ? Carbon::parse($leave->approved_on)->format('Y-m-d H:i') : "",
-            ],
-            'approvals' => $leave->approvals->map(function ($approval) {
-                return [
-                    'level' => $approval->level,
-                    'approver_name' => trim(($approval->approver?->first_name ?? '') . ' ' . ($approval->approver?->last_name ?? '')) ?: 'Pending',
-                    'status' => $approval->status,
-                    'approved_on' => $approval->approved_on ? Carbon::parse($approval->approved_on)->format('Y-m-d H:i') : "",
-                ];
-            })->sortBy('level')->values(),
-        ]);
-    }
+    //     return response()->json([
+    //         'leave_request' => [
+    //             'id' => $leave->id,
+    //             'leave_type' => $leave->leaveType?->name ?? "",
+    //             'start_date' => Carbon::parse($leave->start_date)->format('Y-m-d'),
+    //             'end_date' => Carbon::parse($leave->end_date)->format('Y-m-d'),
+    //             'reason' => $leave->reason??"",
+    //             'status' => $leave->status,
+    //             'total_days_requested' => $leave->total_days_requested,
+    //             'total_days_approved' => $leave->total_days_approved,
+    //             'approved_on' => $leave->approved_on ? Carbon::parse($leave->approved_on)->format('Y-m-d H:i') : "",
+    //         ],
+    //         'approvals' => $leave->approvals->map(function ($approval) {
+    //             return [
+    //                 'level' => $approval->level,
+    //                 'approver_name' => trim(($approval->approver?->first_name ?? '') . ' ' . ($approval->approver?->last_name ?? '')) ?: 'Pending',
+    //                 'status' => $approval->status,
+    //                 'approved_on' => $approval->approved_on ? Carbon::parse($approval->approved_on)->format('Y-m-d H:i') : "",
+    //             ];
+    //         })->sortBy('level')->values(),
+    //     ]);
+    // }
 
     // public function approvalHistory()
     // {
