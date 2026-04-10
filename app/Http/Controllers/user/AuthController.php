@@ -67,7 +67,7 @@ class AuthController extends Controller
 
         return response()->json([
             'status'  => true,
-            'message' => 'OTP sent successfully. Please enter the OTP.'
+            'message' => 'OTP sent successfully. Please enter the OTP.',
         ], 200);
     }
 
@@ -92,9 +92,9 @@ class AuthController extends Controller
             $apiUrl   = config('services.sms.api_url');
             $apiKey   = config('services.sms.api_key');
             $senderId = config('services.sms.sender_id');
-            Log::info("Using SMS API URL: " . $apiUrl);
-            Log::info("Using SMS API key: " . $apiKey);
-            Log::info("Using SMS sender Id: " . $senderId);
+            // Log::info("Using SMS API URL: " . $apiUrl);
+            // Log::info("Using SMS API key: " . $apiKey);
+            // Log::info("Using SMS sender Id: " . $senderId);
 
             $response = Http::get($apiUrl, [
                 'apikey' => $apiKey,
