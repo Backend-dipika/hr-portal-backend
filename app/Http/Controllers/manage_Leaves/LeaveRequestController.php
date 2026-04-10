@@ -279,13 +279,19 @@ class LeaveRequestController extends Controller
                 if ($approver) {
                     $approver->notify(new LeaveApprovalRequestNotification($leaveRequest));
                 }
+
+                Log::info('Approval created', [
+                    'leave_id' => $leaveRequest->id,
+                    'approver_id' => $approverId,
+                    'level' => $level
+                ]);
             }
         }
 
 
         return response()->json([
             'message' => 'Leave request submitted successfully.',
-            'data'    => $leaveRequest,
+            // 'data'    => $leaveRequest,
         ], 201);
     }
 
@@ -946,10 +952,10 @@ class LeaveRequestController extends Controller
                     'start_date' => Carbon::parse($leave->start_date)->format('Y-m-d'),
                     'end_date' => Carbon::parse($leave->end_date)->format('Y-m-d'),
                     'applied_on' => Carbon::parse($leave->created_at)->format('Y-m-d'), // ← only date
-                    'reason' => $leave->reason??"",
+                    'reason' => $leave->reason ?? "",
                     'status' => $leave->status,
                     'total_days_requested' => $leave->total_days_requested,
-                    'total_days_approved' => $leave->total_days_approved??"",
+                    'total_days_approved' => $leave->total_days_approved ?? "",
                     'approvals' => $leave->approvals->map(function ($approval) {
                         return [
                             'level' => $approval->level,
