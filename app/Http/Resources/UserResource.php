@@ -79,9 +79,9 @@ class UserResource extends JsonResource
             }),
 
             'reporting_manager' => $this->whenLoaded('reportingManager', function () {
-                if ($this->reportingManager->isEmpty()) {
-                    return '';
-                }
+                // if ($this->reportingManager->isEmpty()) {
+                //     return '';
+                // }
                 return [
                     'id' => $this->reportingManager?->id,
                     'name' => trim(
@@ -93,9 +93,9 @@ class UserResource extends JsonResource
             }),
 
             'team_members' => $this->whenLoaded('teamMembers', function () {
-                if ($this->teamMembers->isEmpty()) {
-                    return '';
-                }
+                // if ($this->teamMembers->isEmpty()) {
+                //     return '';
+                // }
 
                 return $this->teamMembers->map(function ($member) {
                     return [
