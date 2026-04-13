@@ -103,6 +103,9 @@ Route::middleware(['verify.tokens'])->group(function () {
 
     Route::prefix('notification')->group(function () {
         Route::get('/all', [NotificationController::class, 'getNotifications']);
+        Route::delete('/{id}', [NotificationController::class, 'deleteNotification']);
+        Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+        Route::post('/{id}/mark-read', [NotificationController::class, 'markAsRead']);
     });
 
 

@@ -143,9 +143,9 @@ class AppreciationController extends Controller
                 'from_user_id' => $fromUserId,
                 'from_user_name' => $user->first_name . ' ' . $user->last_name,
                 'to_user_id' => $request->to_user_id,
-                'category' => $request->category,
-                'title' => $request->title,
-                'message' => $request->message,
+                'category' => $request->category ?? 'General',
+                'title' => $request->title ?? 'Appreciation Received',
+                'message' => $request->message ?? 'You have received an appreciation!',
             ];
             $toUser->notify(new AppreciationNotification($messageData));
             return response()->json(['status' => true, 'message' => 'Appreciation  sent'], 200);

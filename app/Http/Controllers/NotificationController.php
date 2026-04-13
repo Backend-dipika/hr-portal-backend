@@ -2,38 +2,31 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\NotificationResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class NotificationController extends Controller
 {
-
     /**
      * Get User Notifications
      *
      * Fetch all notifications for the authenticated user.
      *
      * @group Notifications
-     *
      * @authenticated
      *
-     * @response 200 [
-     *  {
-     *    "id": "1",
-     *    "type": "App\\Notifications\\ExampleNotification",
-     *    "notifiable_type": "App\\Models\\User",
-     *    "notifiable_id": 1,
-     *    "data": {
-     *      "message": "You have a new notification"
-     *    },
-     *    "read_at": null,
-     *    "created_at": "2026-04-08T10:00:00.000000Z",
-     *    "updated_at": "2026-04-08T10:00:00.000000Z"
-     *  }
-     * ]
-     *
-     * @response 401 {
-     *  "message": "Unauthenticated."
+     * @response 200 {
+     *  "success": true,
+     *  "data": [
+     *    {
+     *      "id": "1",
+     *      "type": "ExampleNotification",
+     *      "message": "You have a new notification",
+     *      "is_read": false,
+     *      "created_at": "2026-04-08T10:00:00.000000Z"
+     *    }
+     *  ]
      * }
      */
     public function getNotifications()
@@ -42,28 +35,94 @@ class NotificationController extends Controller
 
         $notifications = $user->notifications()->latest()->get();
 
-        return response()->json($notifications);
+        return response()->json([
+            'success' => true,
+            'data' => NotificationResource::collection($notifications)
+        ]);
     }
 
-    // public function getUnreadNotifications()
-    // {
-    //     $user = Auth::user();
+    /**
+     * Delete Notification
+     *
+     * Delete a specific notification by ID.
+     *
+     * @group Notifications
+     * @authenticated
+     *
+     * @urlParam id string required Notification ID.
+     *
+     * @response 200 {
+     *  "success": true,
+     *  "message": "Notification deleted successfully"
+     * }
+     */
+    public function deleteNotification($id)
+    {
+        $user = Auth::user();
 
-    //     $unread = $user->unreadNotifications()->latest()->get();
+        $notification = $user->notifications()->where('id', $id)->first();
 
-    //     return response()->json($unread);
-    // }
+        if (!$notification) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Notification not found'
+            ], 404);
+        }
 
-    // public function markAsRead($id)
-    // {
-    //     $user = Auth::user();
+        $notification->delete();
 
-    //     $notification = $user->notifications()->where('id', $id)->first();
-    //     if ($notification) {
-    //         $notification->markAsRead();
-    //     }
+        return response()->json([
+            'success' => true,
+            'message' => 'Notification deleted successfully'
+        ]);
+    }
 
-    //     return response()->json(['status' => 'success']);
-    // }
+    /**
+     * Mark All Notifications as Read
+     *
+     * Mark all unread notifications as read for the authenticated user.
+     *
+     * @group Notifications
+     * @authenticated
+     *
+     * @response 200 {
+     *  "success": true,
+     *  "message": "All notifications marked as read"
+     * }
+     */
+    public function markAllAsRead()
+    {
+        $user = Auth::user();
 
+        $user->unreadNotifications->markAsRead();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'All notifications marked as read'
+        ]);
+    }
+    
+    /**
+     * Mark Notification as Read
+     *
+     * @group Notifications
+     * @authenticated
+     *
+     * @urlParam id string required Notification ID.
+     */
+    public function markAsRead($id)
+    {
+        $user = Auth::user();
+
+        $notification = $user->notifications()->where('id', $id)->first();
+
+        if ($notification) {
+            $notification->markAsRead();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Notification marked as read'
+        ]);
+    }
 }
