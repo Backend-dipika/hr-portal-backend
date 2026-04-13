@@ -135,7 +135,7 @@ class EmployeeController extends Controller
     public function show($uuid)
     {
         try {
-            $user = User::with(['designation', 'department', 'employeeOfMonth', 'address',  'employeeType', 'reportingManager','teamMembers.designation'])
+            $user = User::with(['role','designation', 'department', 'employeeOfMonth', 'address',  'employeeType', 'reportingManager','teamMembers.designation'])
                 ->where('uuid', $uuid)->first();
 
             if (!$user) {

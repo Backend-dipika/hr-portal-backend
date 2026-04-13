@@ -40,6 +40,13 @@ class UserResource extends JsonResource
             'current_location' => $this->current_location ?? '',
             'work_mode' => $this->work_mode ?? '',
 
+            'role' => $this->whenLoaded('role', function () {
+                return [
+                    'id' => $this->role?->id,
+                    'name' => $this->role?->name,
+                ];
+            }),
+
             'department' => $this->whenLoaded('department', function () {
                 return [
                     'id' => $this->department?->id,
@@ -78,16 +85,6 @@ class UserResource extends JsonResource
                 ];
             }),
 
-            // 'reporting_manager' => $this->whenLoaded('reportingManager', function () {
-            //     return $this->reportingManager ? [
-            //         'id' => $this->reportingManager->id,
-            //         'name' => trim(
-            //             ($this->reportingManager->first_name ?? '') . ' ' .
-            //                 ($this->reportingManager->last_name ?? '')
-            //         ),
-            //         'email' => $this->reportingManager->office_email,
-            //     ] : [];
-            // }),
             'reporting_manager' => $this->when(
                 $this->relationLoaded('reportingManager'),
                 function () {
