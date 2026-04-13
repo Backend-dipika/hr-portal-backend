@@ -102,6 +102,10 @@ class EmployeeController extends Controller
      *     "first_name": "John",
      *     "last_name": "Doe",
      *     "office_email": "john.doe@company.com",
+     *     "role": {
+     *         "id": 3,
+     *         "name": "Employee"
+     *     },
      *     "designation": {
      *       "id": 1,
      *       "name": "Backend Developer"
@@ -135,7 +139,7 @@ class EmployeeController extends Controller
     public function show($uuid)
     {
         try {
-            $user = User::with(['role','designation', 'department', 'employeeOfMonth', 'address',  'employeeType', 'reportingManager','teamMembers.designation'])
+            $user = User::with(['role', 'designation', 'department', 'employeeOfMonth', 'address',  'employeeType', 'reportingManager', 'teamMembers.designation'])
                 ->where('uuid', $uuid)->first();
 
             if (!$user) {
