@@ -62,7 +62,7 @@ class HolidayController extends Controller
      */
     public function addHolidays(Request $request)
     {
-        Log::info('Holiday request data:', $request->all());
+        // Log::info('Holiday request data:', $request->all());
 
         $validator = Validator::make($request->all(), [
             'holidays' => 'required|array|min:1',
@@ -98,6 +98,7 @@ class HolidayController extends Controller
                 'message' => 'Holidays added successfully',
             ], 200);
         } catch (Exception $e) {
+            Log::error('Error adding holidays', ['error' => $e->getMessage(), 'request_data' => $request->all()]);
             return response()->json([
                 'status' => false,
                 'message' => 'An error occurred while responding to holidays creation',
@@ -150,6 +151,7 @@ class HolidayController extends Controller
                 'data' => $holidays,
             ]);
         } catch (Exception $e) {
+            Log::error('Error fetching holiday list', ['error' => $e->getMessage()]);
             return response()->json([
                 'status' => false,
                 'message' => 'An error occurred fetching holidays details',
@@ -203,6 +205,7 @@ class HolidayController extends Controller
                 'message' => 'Holiday deleted successfully',
             ], 200);
         } catch (Exception $e) {
+            Log::error('Error deleting holiday', ['error' => $e->getMessage(), 'holiday_id' => $id]);
             return response()->json([
                 // 'error' => $e->getMessage(),
                 'status' => false,
@@ -254,7 +257,7 @@ class HolidayController extends Controller
      */
     public function updateHoliday(Request $request)
     {
-        Log::info('Update Holiday request data:', $request->all());
+        // Log::info('Update Holiday request data:', $request->all());
 
         $validator = Validator::make($request->all(), [
             'id' => 'required|integer|exists:holidays,id',
@@ -294,6 +297,7 @@ class HolidayController extends Controller
                 'message' => 'Holiday updated successfully',
             ], 200);
         } catch (Exception $e) {
+            Log::error('Error updating holiday', ['error' => $e->getMessage(), 'request_data' => $request->all()]);
             return response()->json([
                 'status' => false,
                 'message' => 'An error occurred while updating the holiday',
