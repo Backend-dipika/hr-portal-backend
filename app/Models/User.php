@@ -122,6 +122,10 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->belongsTo(User::class, 'reporting_manager_id');
     }
+    public function teamMembers()
+    {
+        return $this->hasMany(User::class, 'reporting_manager_id');
+    }
 
     public function resignationRequests()
     {

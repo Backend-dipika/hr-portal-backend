@@ -21,7 +21,7 @@ class UserResource extends JsonResource
             'first_name' => $this->first_name ?? '',
             'middle_name' => $this->middle_name ?? '',
             'last_name' => $this->last_name ?? '',
-            'profile_picture' => $this->profile_picture??'',
+            'profile_picture' => $this->profile_picture ?? '',
             'office_email' => $this->office_email ?? '',
             'phone_no' => $this->phone_no ?? '',
             'personal_email' => $this->personal_email ?? '',
@@ -30,13 +30,13 @@ class UserResource extends JsonResource
             'date_of_birth' => $this->date_of_birth ?? '',
             'marital_status' => $this->marital_status ?? '',
             'blood_grp' => $this->blood_grp ?? '',
-            'specially_abled' => $this->specially_abled??'',
+            'specially_abled' => $this->specially_abled ?? '',
             'about' => $this->about ?? '',
             'office_id' => $this->office_id ?? '',
             'date_of_joining' => $this->date_of_joining ?? '',
             'probation_end_date' => $this->probation_end_date ?? '',
-            'sepration_status' => $this->sepration_status??'',
-            'sepration_date' => $this->sepration_date??'',
+            'sepration_status' => $this->sepration_status ?? '',
+            'sepration_date' => $this->sepration_date ?? '',
             'current_location' => $this->current_location ?? '',
             'work_mode' => $this->work_mode ?? '',
 
@@ -71,16 +71,6 @@ class UserResource extends JsonResource
                 });
             }),
 
-            // 'document' => $this->whenLoaded('document', function () {
-            //     return [
-            //         'adhar_card' => $this->document?->adhar_card,
-            //         'pan_card' => $this->document?->pan_card,
-            //         'certificate' => $this->document?->certificate,
-            //         'experience_letter' => $this->document?->experience_letter,
-            //         'salary_slip' => $this->document?->salary_slip,
-            //     ];
-            // }),
-
             'employee_type' => $this->whenLoaded('employeeType', function () {
                 return [
                     'id' => $this->employeeType?->id,
@@ -89,6 +79,9 @@ class UserResource extends JsonResource
             }),
 
             'reporting_manager' => $this->whenLoaded('reportingManager', function () {
+                if ($this->reportingManager->isEmpty()) {
+                    return '';
+                }
                 return [
                     'id' => $this->reportingManager?->id,
                     'name' => trim(
@@ -99,7 +92,24 @@ class UserResource extends JsonResource
                 ];
             }),
 
+            'team_members' => $this->whenLoaded('teamMembers', function () {
+                if ($this->teamMembers->isEmpty()) {
+                    return '';
+                }
 
+                return $this->teamMembers->map(function ($member) {
+                    return [
+                        'id' => $member->id,
+                        'first_name' => $member->first_name ?? '',
+                        'last_name' => $member->last_name ?? '',
+
+                        'designation' => $member->designation ? [
+                            'id' => $member->designation->id,
+                            'name' => $member->designation->name,
+                        ] : '',
+                    ];
+                });
+            }),
 
 
             'created_at' => $this->created_at,

@@ -27,3 +27,4 @@ Thumbs.db
 /.scribe
 /public/vendor/scribe
 resources/views/scribe/index.blade.php
+composer.lock
