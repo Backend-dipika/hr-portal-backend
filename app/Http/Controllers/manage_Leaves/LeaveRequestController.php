@@ -54,14 +54,14 @@ class LeaveRequestController extends Controller
         // Step 1: Get authenticated user
         $user = Auth::user();
         if (!$user) {
-            Log::channel('daily')->warning("⚠️ leaveSummary: Unauthenticated access");
+            // Log::channel('daily')->warning("⚠️ leaveSummary: Unauthenticated access");
             return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
         }
-        Log::channel('daily')->info("👤 Authenticated user", ['user_id' => $user->id, 'role' => $user->role->name]);
+        // Log::channel('daily')->info("👤 Authenticated user", ['user_id' => $user->id, 'role' => $user->role->name]);
 
         // Step 2: Determine employee ID to fetch (prioritize query param)
         $employeeId = $request->query('employee_id') ?? $user->id;
-        Log::channel('daily')->info("📌 Employee ID to fetch leave summary", ['employee_id' => $employeeId]);
+        // Log::channel('daily')->info("📌 Employee ID to fetch leave summary", ['employee_id' => $employeeId]);
 
         // Step 3: Fetch leave balances for the current year only
         $currentYear = now()->year;
@@ -70,7 +70,7 @@ class LeaveRequestController extends Controller
             ->where('year', $currentYear)
             ->get();
 
-        Log::channel('daily')->info("📌 Fetched leave balances count for year {$currentYear}", ['count' => $leaveBalances->count()]);
+        // Log::channel('daily')->info("📌 Fetched leave balances count for year {$currentYear}", ['count' => $leaveBalances->count()]);
 
         // Step 4: Map balances into structured array
         $leaveSummary = $leaveBalances->map(function ($balance) {
@@ -80,12 +80,12 @@ class LeaveRequestController extends Controller
                 'annual' => $balance->total_allocated ?? 0,
                 'consumed' => $balance->used_days ?? 0,
             ];
-            Log::channel('daily')->info("📄 Leave balance mapped", $mapped);
+            // Log::channel('daily')->info("📄 Leave balance mapped", $mapped);
             return $mapped;
         });
 
         // Step 5: Log final summary before returning
-        Log::channel('daily')->info("✅ Final leave summary prepared", ['summary' => $leaveSummary]);
+        // Log::channel('daily')->info("✅ Final leave summary prepared", ['summary' => $leaveSummary]);
 
         return response()->json([
             'success' => true,
@@ -280,11 +280,11 @@ class LeaveRequestController extends Controller
                     $approver->notify(new LeaveApprovalRequestNotification($leaveRequest));
                 }
 
-                Log::info('Approval created', [
-                    'leave_id' => $leaveRequest->id,
-                    'approver_id' => $approverId,
-                    'level' => $level
-                ]);
+                // Log::info('Approval created', [
+                //     'leave_id' => $leaveRequest->id,
+                //     'approver_id' => $approverId,
+                //     'level' => $level
+                // ]);
             }
         }
 
@@ -336,10 +336,10 @@ class LeaveRequestController extends Controller
     public function cancelLeave(Request $request, $leaveId)
     {
         $user = Auth::user();
-        Log::info('Cancel leave request started', [
-            'leave_id' => $leaveId,
-            'user_id' => $user->id
-        ]);
+        // Log::info('Cancel leave request started', [
+        //     'leave_id' => $leaveId,
+        //     'user_id' => $user->id
+        // ]);
 
         // Find the leave request owned by this user
         $leaveRequest = LeaveRequest::where('id', $leaveId)
@@ -355,10 +355,10 @@ class LeaveRequestController extends Controller
                 'message' => 'Leave request not found or you are not authorized.'
             ], 404);
         }
-        Log::info('Leave request found', [
-            'leave_id' => $leaveRequest->id,
-            'status' => $leaveRequest->status
-        ]);
+        // Log::info('Leave request found', [
+        //     'leave_id' => $leaveRequest->id,
+        //     'status' => $leaveRequest->status
+        // ]);
 
         // Check if leave is already approved or rejected
         if (in_array($leaveRequest->status, ['approved', 'rejected', 'cancelled'])) {
@@ -376,11 +376,11 @@ class LeaveRequestController extends Controller
         $leaveRequest->status = 'cancelled';
         $leaveRequest->save();
 
-        Log::info('Leave marked as cancelled', [
-            'leave_id' => $leaveRequest->id,
-            'status' => $leaveRequest->status,
-            'is_cancel_request' => $leaveRequest->is_cancel_request
-        ]);
+        // Log::info('Leave marked as cancelled', [
+        //     'leave_id' => $leaveRequest->id,
+        //     'status' => $leaveRequest->status,
+        //     'is_cancel_request' => $leaveRequest->is_cancel_request
+        // ]);
 
         // Optionally notify approvers about cancellation
         $approvals = LeaveApproval::where('leave_request_id', $leaveRequest->id)
@@ -581,27 +581,27 @@ class LeaveRequestController extends Controller
      */
     public function rejectLeave(Request $request, $id)
     {
-        Log::info("Starting leave rejection process", [
-            'leave_request_id' => $id,
-            'approver_id' => Auth::id()
-        ]);
+        // Log::info("Starting leave rejection process", [
+        //     'leave_request_id' => $id,
+        //     'approver_id' => Auth::id()
+        // ]);
 
         $leaveRequest = LeaveRequest::findOrFail($id);
         $approver = Auth::user();
 
-        Log::info("Fetched leave request for rejection", [
-            'leave_request_id' => $leaveRequest->id,
-            'current_status' => $leaveRequest->status,
-            'request_user_id' => $leaveRequest->user_id
-        ]);
+        // Log::info("Fetched leave request for rejection", [
+        //     'leave_request_id' => $leaveRequest->id,
+        //     'current_status' => $leaveRequest->status,
+        //     'request_user_id' => $leaveRequest->user_id
+        // ]);
 
         // Prevent rejecting already finalized leave
         if ($leaveRequest->status !== 'pending') {
-            Log::warning("Attempt to reject already finalized leave request", [
-                'leave_request_id' => $leaveRequest->id,
-                'status' => $leaveRequest->status,
-                'approver_id' => $approver->id
-            ]);
+            // Log::warning("Attempt to reject already finalized leave request", [
+            //     'leave_request_id' => $leaveRequest->id,
+            //     'status' => $leaveRequest->status,
+            //     'approver_id' => $approver->id
+            // ]);
 
             return response()->json(['message' => 'Leave already processed.'], 400);
         }
@@ -618,12 +618,12 @@ class LeaveRequestController extends Controller
             $approval->approved_on = now();
             $approval->save();
 
-            Log::info("Approver record updated to rejected", [
-                'approval_id' => $approval->id,
-                'approver_id' => $approver->id,
-                'leave_request_id' => $leaveRequest->id,
-                'approved_on' => $approval->approved_on
-            ]);
+            // Log::info("Approver record updated to rejected", [
+            //     'approval_id' => $approval->id,
+            //     'approver_id' => $approver->id,
+            //     'leave_request_id' => $leaveRequest->id,
+            //     'approved_on' => $approval->approved_on
+            // ]);
         } else {
             Log::warning("No matching approval record found for approver", [
                 'leave_request_id' => $leaveRequest->id,
@@ -637,16 +637,16 @@ class LeaveRequestController extends Controller
         $leaveRequest->total_days_approved = 0;
         $leaveRequest->save();
 
-        Log::info("Leave request finalized as rejected", [
-            'leave_request_id' => $leaveRequest->id,
-            'approved_on' => $leaveRequest->approved_on
-        ]);
+        // Log::info("Leave request finalized as rejected", [
+        //     'leave_request_id' => $leaveRequest->id,
+        //     'approved_on' => $leaveRequest->approved_on
+        // ]);
 
         $leaveRequest->user->notify(new LeaveStatusNotification($leaveRequest, 'Rejected'));
-        Log::info("Leave rejection notification sent", [
-            'leave_request_id' => $leaveRequest->id,
-            'notified_user_id' => $leaveRequest->user_id
-        ]);
+        // Log::info("Leave rejection notification sent", [
+        //     'leave_request_id' => $leaveRequest->id,
+        //     'notified_user_id' => $leaveRequest->user_id
+        // ]);
 
         return response()->json([
             'message' => 'Leave rejected successfully.',
@@ -716,48 +716,48 @@ class LeaveRequestController extends Controller
     public function index()
     {
         // Basic request info
-        Log::info('[leaves.index] called', [
-            'ip' => request()->ip(),
-            'route' => Route::currentRouteName() ?? 'n/a',
-            'method' => request()->method(),
-            'user_agent' => request()->header('User-Agent'),
-            'authorization_present' => request()->header('Authorization') ? true : false,
-        ]);
+        // Log::info('[leaves.index] called', [
+        //     'ip' => request()->ip(),
+        //     'route' => Route::currentRouteName() ?? 'n/a',
+        //     'method' => request()->method(),
+        //     'user_agent' => request()->header('User-Agent'),
+        //     'authorization_present' => request()->header('Authorization') ? true : false,
+        // ]);
 
         // Auth check
         $user = Auth::user();
         if (!$user) {
-            Log::error('[leaves.index] no authenticated user (Auth::user() returned null)');
+            // Log::error('[leaves.index] no authenticated user (Auth::user() returned null)');
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthenticated',
             ], 401);
         }
 
-        Log::info('[leaves.index] authenticated user', [
-            'id' => $user->id ?? null,
-            'email' => $user->email ?? null,
-            'role' => $user->role ?? null,
-        ]);
+        // Log::info('[leaves.index] authenticated user', [
+        //     'id' => $user->id ?? null,
+        //     'email' => $user->email ?? null,
+        //     'role' => $user->role ?? null,
+        // ]);
 
         try {
             // Build base query
             $query = LeaveRequest::with(['user', 'leaveType', 'approvals'])
                 ->orderBy('created_at', 'desc');
 
-            Log::info('[leaves.index] base query prepared (with user, leaveType, approvals)');
+            // Log::info('[leaves.index] base query prepared (with user, leaveType, approvals)');
 
             // Role-based filtering: use the role name
             $roleName = $user->role->name ?? null;
 
             if ($roleName === 'Admin') {
-                Log::info('[leaves.index] ROLE = Admin; fetching level 2 pending approvals');
+                // Log::info('[leaves.index] ROLE = Admin; fetching level 2 pending approvals');
                 $query->whereHas('approvals', function ($q) use ($user) {
                     $q->where('level', 2)
                         ->where('approver_id', $user->id);
                 });
             } elseif ($roleName === 'Super Admin') {
-                Log::info('[leaves.index] ROLE = Super Admin');
+                // Log::info('[leaves.index] ROLE = Super Admin');
 
                 $query->whereHas('approvals', function ($q) {
                     $q->where('level', 1);
@@ -772,17 +772,19 @@ class LeaveRequestController extends Controller
                             $q->where('name', 'Admin');
                         });
                 });
-            } elseif ($roleName === 'Reporting Manager') {
-                Log::info('[leaves.index] ROLE = Reporting Manager; fetching level 1 approvals assigned to RM');
-                $query->whereHas('approvals', function ($q) use ($user) {
-                    $q->where('level', 1)
-                        ->where('approver_id', $user->id);
-                });
-            } else {
-                Log::warning('[leaves.index] user role not allowed', [
-                    'role' => $roleName,
-                    'user_id' => $user->id,
-                ]);
+            } 
+            // elseif ($roleName === 'Reporting Manager') {
+            //     // Log::info('[leaves.index] ROLE = Reporting Manager; fetching level 1 approvals assigned to RM');
+            //     $query->whereHas('approvals', function ($q) use ($user) {
+            //         $q->where('level', 1)
+            //             ->where('approver_id', $user->id);
+            //     });
+            // }
+             else {
+                // Log::warning('[leaves.index] user role not allowed', [
+                //     'role' => $roleName,
+                //     'user_id' => $user->id,
+                // ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to view leave requests',
@@ -790,26 +792,26 @@ class LeaveRequestController extends Controller
             }
 
             // Log SQL and bindings
-            try {
-                Log::info('[leaves.index] query SQL and bindings', [
-                    'sql' => $query->toSql(),
-                    'bindings' => $query->getBindings(),
-                ]);
-            } catch (\Throwable $t) {
-                Log::warning('[leaves.index] unable to capture SQL', ['error' => $t->getMessage()]);
-            }
+            // try {
+            //     Log::info('[leaves.index] query SQL and bindings', [
+            //         'sql' => $query->toSql(),
+            //         'bindings' => $query->getBindings(),
+            //     ]);
+            // } catch (\Throwable $t) {
+            //     Log::warning('[leaves.index] unable to capture SQL', ['error' => $t->getMessage()]);
+            // }
 
             // Execute query
             DB::enableQueryLog();
-            Log::info('[leaves.index] executing query->get() now');
+            // Log::info('[leaves.index] executing query->get() now');
             $fetched = $query->get();
 
-            Log::info('[leaves.index] executed DB queries', [
-                'count' => count(DB::getQueryLog()),
-                'queries' => DB::getQueryLog(),
-            ]);
+            // Log::info('[leaves.index] executed DB queries', [
+            //     'count' => count(DB::getQueryLog()),
+            //     'queries' => DB::getQueryLog(),
+            // ]);
 
-            Log::info('[leaves.index] fetched rows', ['count' => $fetched->count()]);
+            // Log::info('[leaves.index] fetched rows', ['count' => $fetched->count()]);
 
             if ($fetched->isEmpty()) {
                 Log::info('[leaves.index] no leave requests returned for this user/role');
@@ -817,25 +819,25 @@ class LeaveRequestController extends Controller
 
             // Map response including approvals
             $requests = $fetched->map(function ($leave) {
-                Log::info('[leaves.index] formatting leave row', [
-                    'leave_id' => $leave->id,
-                    'user_id' => $leave->user_id,
-                    'status' => $leave->status,
-                    'approvals_count' => $leave->approvals?->count() ?? 0,
-                ]);
+                // Log::info('[leaves.index] formatting leave row', [
+                //     'leave_id' => $leave->id,
+                //     'user_id' => $leave->user_id,
+                //     'status' => $leave->status,
+                //     'approvals_count' => $leave->approvals?->count() ?? 0,
+                // ]);
 
-                if ($leave->approvals && $leave->approvals->isNotEmpty()) {
-                    foreach ($leave->approvals as $app) {
-                        Log::info('[leaves.index] approval detail', [
-                            'leave_id' => $leave->id,
-                            'approval_id' => $app->id ?? null,
-                            'level' => $app->level ?? null,
-                            'approver_id' => $app->approver_id ?? null,
-                            'status' => $app->status ?? null,
-                            'approved_on' => $app->approved_on ? \Carbon\Carbon::parse($app->approved_on)->format('Y-m-d H:i') : "",
-                        ]);
-                    }
-                }
+                // if ($leave->approvals && $leave->approvals->isNotEmpty()) {
+                //     foreach ($leave->approvals as $app) {
+                //         Log::info('[leaves.index] approval detail', [
+                //             'leave_id' => $leave->id,
+                //             'approval_id' => $app->id ?? null,
+                //             'level' => $app->level ?? null,
+                //             'approver_id' => $app->approver_id ?? null,
+                //             'status' => $app->status ?? null,
+                //             'approved_on' => $app->approved_on ? \Carbon\Carbon::parse($app->approved_on)->format('Y-m-d H:i') : "",
+                //         ]);
+                //     }
+                // }
 
                 return [
                     'id' => $leave->id,
@@ -863,7 +865,7 @@ class LeaveRequestController extends Controller
                 ];
             });
 
-            Log::info('[leaves.index] mapping completed', ['mapped_count' => $requests->count()]);
+            // Log::info('[leaves.index] mapping completed', ['mapped_count' => $requests->count()]);
 
             return response()->json([
                 'success' => true,
