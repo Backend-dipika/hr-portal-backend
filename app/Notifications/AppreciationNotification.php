@@ -48,6 +48,7 @@ class AppreciationNotification extends Notification
     {
         return [
             'from_user_id' => $this->messageData['from_user_id'],
+            'from_user_name' => $this->messageData['from_user_name'],
             'to_user_id' => $this->messageData['to_user_id'],
             'title' => $this->messageData['title'],
             'message' => $this->messageData['message'],

@@ -141,6 +141,7 @@ class AppreciationController extends Controller
             }
             $messageData = [
                 'from_user_id' => $fromUserId,
+                'from_user_name' => $user->first_name . ' ' . $user->last_name,
                 'to_user_id' => $request->to_user_id,
                 'category' => $request->category,
                 'title' => $request->title,
