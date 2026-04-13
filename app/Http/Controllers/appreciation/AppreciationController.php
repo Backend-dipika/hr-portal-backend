@@ -62,7 +62,7 @@ class AppreciationController extends Controller
             $user = User::select(['id', 'first_name', 'last_name'])->get();
             return response()->json(['status' => true, 'data' => $user, 'message' => 'Apreciation sent'], 200);
         } catch (Exception $e) {
-            return response()->json(['status' => false, 'message' => 'Error while saving Appreciation'], 500);
+            return response()->json(['status' => false, 'message' => 'Error sending list'], 500);
         }
     }
 
@@ -104,7 +104,7 @@ class AppreciationController extends Controller
      */
     public function sendAppreciation(Request $request)
     {
-        Log::info("send apperection", $request->all());
+        // Log::info("send apperection", $request->all());
         // Log::info('Holiday request data:', $request->all());
         $validator = Validator::make($request->all(), [
             // 'from_user_id' => 'required|exists:users,id',
@@ -149,6 +149,10 @@ class AppreciationController extends Controller
             $toUser->notify(new AppreciationNotification($messageData));
             return response()->json(['status' => true, 'message' => 'Appreciation  sent'], 200);
         } catch (Exception $e) {
+            Log::error('Error while sending appreciation', [
+                'message' => $e->getMessage(),
+                'request_data' => $request->all(),
+            ]);
             return response()->json(['status' => false, 'message' => 'Error while saving Appreciation'], 500);
         }
     }
