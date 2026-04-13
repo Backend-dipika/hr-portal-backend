@@ -78,24 +78,30 @@ class UserResource extends JsonResource
                 ];
             }),
 
-            'reporting_manager' => $this->whenLoaded('reportingManager', function () {
-                return $this->reportingManager ? [
-                    'id' => $this->reportingManager->id,
-                    'name' => trim(
-                        ($this->reportingManager->first_name ?? '') . ' ' .
-                            ($this->reportingManager->last_name ?? '')
-                    ),
-                    'email' => $this->reportingManager->office_email,
-                ] : [];
-                // return [
-                //     'id' => $this->reportingManager?->id,
-                //     'name' => trim(
-                //         ($this->reportingManager?->first_name ?? '') . ' ' .
-                //             ($this->reportingManager?->last_name ?? '')
-                //     ),
-                //     'email' => $this->reportingManager?->office_email,
-                // ];
-            }),
+            // 'reporting_manager' => $this->whenLoaded('reportingManager', function () {
+            //     return $this->reportingManager ? [
+            //         'id' => $this->reportingManager->id,
+            //         'name' => trim(
+            //             ($this->reportingManager->first_name ?? '') . ' ' .
+            //                 ($this->reportingManager->last_name ?? '')
+            //         ),
+            //         'email' => $this->reportingManager->office_email,
+            //     ] : [];
+            // }),
+            'reporting_manager' => $this->when(
+                $this->relationLoaded('reportingManager'),
+                function () {
+                    return $this->reportingManager ? [
+                        'id' => $this->reportingManager->id,
+                        'name' => trim(
+                            ($this->reportingManager->first_name ?? '') . ' ' .
+                                ($this->reportingManager->last_name ?? '')
+                        ),
+                        'email' => $this->reportingManager->office_email,
+                    ] : [];
+                },
+                [] // default if not loaded
+            ),
 
             'team_members' => $this->whenLoaded('teamMembers', function () {
                 return $this->teamMembers->map(function ($member) {
