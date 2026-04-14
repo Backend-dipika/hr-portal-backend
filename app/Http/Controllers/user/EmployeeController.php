@@ -48,7 +48,7 @@ class EmployeeController extends Controller
     public function index()
     {
         try {
-            $users = User::with(['designation', 'department', 'employeeOfMonth'])->get();
+            $users = User::with(['designation', 'department', 'employeeOfMonth'])->where('role_id','!=',1)->get();
 
 
             $data = $users->map(function ($user) {
@@ -64,6 +64,7 @@ class EmployeeController extends Controller
                     'employee_of_month' => $user->employeeOfMonth?->first()?->month ?? '',
                     'sepration_status' => $user->sepration_status ?? '',
                     'sepration_date' => $user->sepration_date ?? '',
+                    'current_location' => $user->current_location ?? ''
                 ];
             });
 
