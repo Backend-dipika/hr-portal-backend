@@ -48,7 +48,7 @@ class EmployeeController extends Controller
     public function index()
     {
         try {
-            $users = User::with(['designation', 'department', 'employeeOfMonth'])->where('role_id','!=',1)->get();
+            $users = User::with(['designation', 'department', 'employeeOfMonth'])->where('role_id', '!=', 1)->paginate(10);
 
 
             $data = $users->map(function ($user) {
@@ -70,7 +70,14 @@ class EmployeeController extends Controller
 
             return response()->json([
                 'status' => true,
-                'data' => $data
+                'data' => $data,
+                'links' => $users->links(),
+                'pagination' => [
+                    'current_page' => $users->currentPage(),
+                    'last_page' => $users->lastPage(),
+                    'per_page' => $users->perPage(),
+                    'total' => $users->total(),
+                ]
             ], 200);
         } catch (Exception $e) {
             Log::error('Error fetching employees list', [
