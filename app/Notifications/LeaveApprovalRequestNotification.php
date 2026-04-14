@@ -7,6 +7,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Log;
 
 class LeaveApprovalRequestNotification extends Notification  implements ShouldQueue
 {
@@ -35,15 +36,17 @@ class LeaveApprovalRequestNotification extends Notification  implements ShouldQu
      */
     public function toMail(object $notifiable): MailMessage
     {
+        $leaveRequest = LeaveRequest::with(['user', 'leaveType'])
+            ->find($this->leaveRequest->id); 
+        // Log::info('Leave request user', ['user_id' => $leaveRequest->user_id, 'user_name' => optional($leaveRequest->user)->first_name]);
         return (new MailMessage)
             ->subject('New Leave Request Pending Your Approval')
-            ->greeting('Hello ' . $notifiable->name . ',')
-            ->line($this->leaveRequest->user->name . ' has submitted a leave request.')
-            ->line('Leave Type: ' . $this->leaveRequest->leaveType->name)
-            ->line('Dates: ' . $this->leaveRequest->start_date . ' to ' . $this->leaveRequest->end_date)
-            ->line('Reason: ' . ($this->leaveRequest->reason ?: 'N/A'))
-            // ->action('Review Request', url('/leave-approvals/' . $this->leaveRequest->id))
-            ->action('Review Request', 'http://localhost:5173/') //url('/')
+            ->greeting('Hello ' . $notifiable->first_name . ',')
+            ->line(optional($leaveRequest->user)->first_name . ' ' . optional($leaveRequest->user)->last_name . ' has submitted a leave request.')
+            ->line('Leave Type: ' . optional($leaveRequest->leaveType)->name)
+            ->line('Dates: ' . $leaveRequest->start_date . ' to ' . $leaveRequest->end_date)
+            ->line('Reason: ' . ($leaveRequest->reason ?: 'N/A'))
+            ->action('Review Request', 'http://localhost:5173/')
             ->line('Please review and take action.');
     }
 

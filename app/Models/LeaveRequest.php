@@ -43,7 +43,7 @@ class LeaveRequest extends Model
     }
 
     public function approvals()
-{
-    return $this->hasMany(LeaveApproval::class, 'leave_request_id');
-}
+    {
+        return $this->hasMany(LeaveApproval::class, 'leave_request_id');
+    }
 }

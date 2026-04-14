@@ -247,6 +247,8 @@ class LeaveRequestController extends Controller
             'total_days_approved'  => 0,
         ]);
 
+        // $leaveRequest->load('user', 'leaveType');
+
         // ✅ Get Super Admin
         $superAdmin = \App\Models\User::where('role_id', 1)->first();
 
@@ -262,7 +264,8 @@ class LeaveRequestController extends Controller
                 2 => $user->reporting_manager_id,
             ];
         }
-
+        // Log::info('Leave request created', ['data' => $leaveRequest->toArray()]);
+        Log::info('Leave request Creator', ['user_id' => $leaveRequest->user_id, 'user_name' => $leaveRequest->user->first_name]);
         // ✅ Create approval records (all pending)
         foreach ($workflowLevels as $level => $approverId) {
             if ($approverId) {
@@ -772,7 +775,7 @@ class LeaveRequestController extends Controller
                             $q->where('name', 'Admin');
                         });
                 });
-            } 
+            }
             // elseif ($roleName === 'Reporting Manager') {
             //     // Log::info('[leaves.index] ROLE = Reporting Manager; fetching level 1 approvals assigned to RM');
             //     $query->whereHas('approvals', function ($q) use ($user) {
@@ -780,7 +783,7 @@ class LeaveRequestController extends Controller
             //             ->where('approver_id', $user->id);
             //     });
             // }
-             else {
+            else {
                 // Log::warning('[leaves.index] user role not allowed', [
                 //     'role' => $roleName,
                 //     'user_id' => $user->id,
