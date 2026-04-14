@@ -374,7 +374,7 @@ class ProfileController extends Controller
      *
      * @group Employee Documents
      *
-     * @urlParam id integer required User ID. Example: 1
+     * @urlParam user_uuid string required User UUID. Example: be762142-95f0-45a6-aa31-023e9a8fe1d0
      *
      * @response 200 {
      *   "status": true,
@@ -409,10 +409,28 @@ class ProfileController extends Controller
                 ], 404);
             }
 
+            $doc = $user->document;
+
+            $data = [
+                'id' => $doc->id,
+                'user_id' => $doc->user_id,
+                'adhar_card' => $doc->adhar_card ?? '',
+                'pan_card' => $doc->pan_card ?? '',
+                'certificate' => $doc->certificate ?? '',
+                'experience_letter' => $doc->experience_letter ?? '',
+                'salary_slip' => $doc->salary_slip ?? '',
+                'created_at' => $doc->created_at,
+                'updated_at' => $doc->updated_at,
+            ];
+
             return response()->json([
                 'status' => true,
-                'documents' => $user->document, // Only return the document relation
+                'documents' => $data,
             ]);
+            // return response()->json([
+            //     'status' => true,
+            //     'documents' => $user->document, // Only return the document relation
+            // ]);
         } catch (Exception $e) {
             Log::error('Error fetching documents for user UUID ' . $user_uuid . ': ' . $e->getMessage());
             return response()->json([
