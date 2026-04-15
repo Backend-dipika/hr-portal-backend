@@ -410,6 +410,12 @@ class ProfileController extends Controller
             }
 
             $doc = $user->document;
+            if (!$doc) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Documents not found for this user'
+                ], 404);
+            }
 
             $data = [
                 'id' => $doc->id,
