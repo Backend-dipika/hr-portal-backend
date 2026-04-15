@@ -11,7 +11,7 @@ use function Knuckles\Scribe\Config\removeStrategies;
 
 return [
     // The HTML <title> for the generated documentation.
-    'title' => config('app.name').' API Documentation',
+    'title' => config('app.name') . ' API Documentation',
 
     // A short description of your API. Will be included in the docs webpage, Postman collection and OpenAPI spec.
     'description' => '',
@@ -93,37 +93,47 @@ return [
         'enabled' => true,
 
         // The base URL to use in the API tester. Leave as null to be the same as the displayed URL (`scribe.base_url`).
-        'base_url' => null,
+        'base_url' => 'http://127.0.0.1:8000',
 
         // [Laravel Sanctum] Fetch a CSRF token before each request, and add it as an X-XSRF-TOKEN header.
         'use_csrf' => false,
 
         // The URL to fetch the CSRF token from (if `use_csrf` is true).
         'csrf_url' => '/sanctum/csrf-cookie',
+
     ],
+    //     'auth' => [
+    //     'enabled' => true,          // Change false → true
+    //     'default' => true,          // Apply auth to all endpoints by default
+    //     'in' => 'bearer',           // Token goes as Bearer token
+    //     'name' => 'Authorization',
+    //     'use_value' => env('SCRIBE_AUTH_KEY', ''),  // optional default token
+    //     'placeholder' => 'your-token-here',
+    //     'extra_info' => 'Get your token from the Login endpoint.',
+    // ],
 
     // How is your API authenticated? This information will be used in the displayed docs, generated examples and response calls.
     'auth' => [
         // Set this to true if ANY endpoints in your API use authentication.
-        'enabled' => false,
+        'enabled' => true,
 
         // Set this to true if your API should be authenticated by default. If so, you must also set `enabled` (above) to true.
         // You can then use @unauthenticated or @authenticated on individual endpoints to change their status from the default.
-        'default' => false,
+        'default' => true,
 
         // Where is the auth value meant to be sent in a request?
-        'in' => AuthIn::BEARER->value,
+        'in' => 'bearer', // Options: "query", "body", "header", "bearer". If you use
 
         // The name of the auth parameter (e.g. token, key, apiKey) or header (e.g. Authorization, Api-Key).
-        'name' => 'key',
+        'name' => 'Authorization',
 
         // The value of the parameter to be used by Scribe to authenticate response calls.
         // This will NOT be included in the generated documentation. If empty, Scribe will use a random value.
-        'use_value' => env('SCRIBE_AUTH_KEY'),
+        'use_value' => env('SCRIBE_AUTH_KEY', ''),
 
         // Placeholder your users will see for the auth parameter in the example requests.
         // Set this to null if you want Scribe to use a random value as placeholder instead.
-        'placeholder' => '{YOUR_AUTH_KEY}',
+        'placeholder' =>  'your-token-here',
 
         // Any extra authentication-related info for your users. Markdown and HTML are supported.
         'extra_info' => 'You can retrieve your token by visiting your dashboard and clicking <b>Generate API token</b>.',
@@ -134,8 +144,8 @@ return [
     // To add a language of your own, see https://scribe.knuckles.wtf/laravel/advanced/example-requests
     // Note: does not work for `external` docs types
     'example_languages' => [
-        'bash',
         'javascript',
+        // 'bash',
     ],
 
     // Generate a Postman collection (v2.1.0) in addition to HTML docs.

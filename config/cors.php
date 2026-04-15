@@ -21,6 +21,8 @@ return [
         'login',
         'logout',
         'employees',
+        'docs/*',
+        'docs.openapi'
     ],
 
     'allowed_methods' => ['*'],
@@ -29,6 +31,7 @@ return [
         'http://localhost:5173',
         'http://127.0.0.1:5173',
         'http://13.206.25.51',
+        'https://petstore.swagger.io'
     ],
 
     'allowed_origins_patterns' => [],
