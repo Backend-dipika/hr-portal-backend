@@ -85,7 +85,8 @@ class LeaveTypeController extends Controller
      *         "designation": { "id": 2, "name": "Manager" }
      *       },
      *       "pending_paid_leave": 10,
-     *       "pending_compoff": 2
+     *       "pending_compoff": 2,
+     *       "carry_forward": 0
      *     }
      *   ],
      *   "message": "Pending leaves calculated successfully"
