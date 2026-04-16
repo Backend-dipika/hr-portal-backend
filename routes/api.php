@@ -115,6 +115,7 @@ Route::middleware(['verify.tokens'])->group(function () {
         Route::post('/add', [LeaveTypeController::class, 'store']);
         Route::put('/update', [LeaveTypeController::class, 'update']);
         Route::get('/pending', [LeaveTypeController::class, 'showPendingLeavesOfAllEmployees']);
+        Route::delete('/delete/{id}', [LeaveTypeController::class, 'destroy']);
     });
 
     Route::prefix('forward-encash')->group(function () {

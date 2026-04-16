@@ -270,44 +270,44 @@ class LeaveTypeController extends Controller
             ], 500);
         }
     }
-    
 
-    // /**
-    //  * Delete Leave Type
-    //  *
-    //  * Delete a leave type by its ID.
-    //  * @group Leave Type Management
-    //  *
-    //  * @authenticated
-    //  *
-    //  * @urlParam id integer required Leave type ID. Example: 1
-    //  *
-    //  * @response 200 {
-    //  *   "message": "Leave type deleted successfully"
-    //  * }
-    //  *
-    //  * @response 404 {
-    //  *   "message": "Leave type not found"
-    //  * }
-    //  *
-    //  * @response 500 {
-    //  *   "message": "Something went wrong"
-    //  * }
-    //  */
-    // public function destroy($id)
-    // {
-    //     try {
-    //         $leaveType = LeaveType::findOrFail($id);
-    //         $leaveType->delete();
 
-    //         return response()->json([
-    //             'message' => 'Leave type deleted successfully'
-    //         ]);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'message' => 'Something went wrong',
-    //             'error'   => $e->getMessage()
-    //         ], 500);
-    //     }
-    // }
+    /**
+     * Delete Leave Type
+     *
+     * Delete a leave type by its ID.
+     * @group Leave Type Management
+     *
+     * @authenticated
+     *
+     * @urlParam id integer required Leave type ID. Example: 1
+     *
+     * @response 200 {
+     *   "message": "Leave type deleted successfully"
+     * }
+     *
+     * @response 404 {
+     *   "message": "Leave type not found"
+     * }
+     *
+     * @response 500 {
+     *   "message": "Something went wrong"
+     * }
+     */
+    public function destroy($id)
+    {
+        try {
+            $leaveType = LeaveType::findOrFail($id);
+            $leaveType->delete();
+
+            return response()->json([
+                'message' => 'Leave type deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Something went wrong',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
 }
