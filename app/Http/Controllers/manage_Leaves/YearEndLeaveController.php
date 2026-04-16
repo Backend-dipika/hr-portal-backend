@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\manage_Leaves;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\LeaveYearEndResource;
 use App\Models\LeaveBalance;
 use App\Models\LeaveYearEndAction;
 use App\Models\User;
@@ -52,27 +53,29 @@ class YearEndLeaveController extends Controller
     {
         try {
             $user = Auth::user();
-            // leave which are need to be closed for the user
+
             $isEligible = LeaveYearEndAction::where('user_id', $user->id)
-                ->where('status', '=',  'submitted')
+                ->where('status', 'submitted')
                 ->where('is_closed', false)
                 ->first();
 
-            $allRecords = LeaveYearEndAction::where('user_id', $user->id)->where('status', '!=',  'submitted')->get();
-            Log::info('Is Eligible:', $isEligible ? $isEligible->toArray() : ['No record found']);
+            $allRecords = LeaveYearEndAction::where('user_id', $user->id)
+                ->where('status', '!=', 'submitted')
+                ->get();
 
-            // Log all records
-            Log::info('All Records:', $allRecords->toArray());
             return response()->json([
                 'status' => 'success',
                 'message' => 'Year-end process check completed.',
                 'data' => [
-                    'eligible' => $isEligible,
-                    'all_records' => $allRecords,
+                    'eligible' => $isEligible ? new LeaveYearEndResource($isEligible) : (object)[],
+                    'all_records' => LeaveYearEndResource::collection($allRecords),
                 ]
             ], 200);
         } catch (\Exception $e) {
-            return response()->json(['status' => 'false', 'message' => 'An error occurred while checking year-end process.'], 500);
+            return response()->json([
+                'status' => 'false',
+                'message' => 'An error occurred while checking year-end process.'
+            ], 500);
         }
     }
 
@@ -219,7 +222,7 @@ class YearEndLeaveController extends Controller
                 ->where('is_closed', false)
                 ->get();
             Log::info('[YearEndLeaveController.showApprovalRequests] fetched rows', ['count' => $requests]);
-            return response()->json(['status' => 'true', 'data' => $requests], 200);
+            return response()->json(['status' => 'true', 'data' => LeaveYearEndResource::collection($requests)], 200);
         } catch (\Exception $e) {
             return response()->json(['status' => 'false', 'message' => 'An error occurred while fetching approval requests.'], 500);
         }
