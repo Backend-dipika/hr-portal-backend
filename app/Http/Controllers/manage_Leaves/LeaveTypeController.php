@@ -119,10 +119,16 @@ class LeaveTypeController extends Controller
                     ->where('leave_type_id', 2) // Comp-off
                     ->sum(fn($b) => $b->total_allocated - $b->used_days);
 
+                $carryForward = $balances
+                    ->where('leave_type_id', 1)
+                    ->sum(fn($b) => $b->carry_forward_days ?? 0);
+
+
                 return [
                     'user' => $user,
                     'pending_paid_leave' => $pendingPaidLeave,
                     'pending_compoff' => $pendingCompOff,
+                    'carry_forward' => $carryForward,
                     // 'leave_balances' => $balancesData
                 ];
             });
@@ -270,7 +276,6 @@ class LeaveTypeController extends Controller
             ], 500);
         }
     }
-
 
     /**
      * Delete Leave Type
