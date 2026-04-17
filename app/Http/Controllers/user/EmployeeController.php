@@ -64,7 +64,10 @@ class EmployeeController extends Controller
                     'employee_of_month' => $user->employeeOfMonth?->first()?->month ?? '',
                     'sepration_status' => $user->sepration_status ?? '',
                     'sepration_date' => $user->sepration_date ?? '',
-                    'current_location' => $user->current_location ?? ''
+                    'is_disabled' => $user->is_disabled ?? false,
+                    'probation_end_date' => $user->probation_end_date ?? '',
+                    'current_location' => $user->current_location ?? '',
+
                 ];
             });
 
