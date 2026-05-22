@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\appreciation\AppreciationController;
+use App\Http\Controllers\attendance\AttendanceController;
 use App\Http\Controllers\dashboard\DashboardController;
 use App\Http\Controllers\holiday\HolidayController;
 use App\Http\Controllers\holiday\HolidaysController;
@@ -130,5 +131,12 @@ Route::middleware(['verify.tokens'])->group(function () {
         Route::get('/on-leave', [DashboardController::class, 'showOffThisWeekEmployees']);
         Route::get('/stats', [DashboardController::class, 'showStatsComponentData']);
     });
+
+    Route::prefix('attendance')->group(function () {
+        Route::get('/all', [AttendanceController::class, 'getEmployeeAttendance']);
+        // Route::get('/self', [AttendanceController::class, 'getSelfAttendance']);
+        Route::get('/employee', [AttendanceController::class, 'getEmployeeList']);
+    });
 });
+
 //commit
