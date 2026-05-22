@@ -151,15 +151,9 @@ class AttendanceController extends Controller
             $user = auth()->user();
 
             // Correct user id
-            $userId = $user->id;
+            $userId = $user->office_id;
 
             $query = ProcessedAttendance::where('user_id', $userId);
-
-            /*
-        |--------------------------------------------------------------------------
-        | Filters
-        |--------------------------------------------------------------------------
-        */
 
             // Date range filter
             if ($request->filled('from_date') && $request->filled('to_date')) {

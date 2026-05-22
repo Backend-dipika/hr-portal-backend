@@ -134,7 +134,7 @@ Route::middleware(['verify.tokens'])->group(function () {
 
     Route::prefix('attendance')->group(function () {
         Route::get('/all', [AttendanceController::class, 'getEmployeeAttendance']);
-        // Route::get('/self', [AttendanceController::class, 'getSelfAttendance']);
+        Route::get('/self', [AttendanceController::class, 'getSelfAttendance']);
         Route::get('/employee', [AttendanceController::class, 'getEmployeeList']);
     });
 });
