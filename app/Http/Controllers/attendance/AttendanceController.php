@@ -79,7 +79,7 @@ class AttendanceController extends Controller
                 $attendance->status =
                     ($attendance->checkin_time && $attendance->checkout_time)
                     ? 'Present'
-                    : 'Incomplete';
+                    : 'Absent';
 
                 return $attendance;
             });
@@ -187,7 +187,7 @@ class AttendanceController extends Controller
                 $attendance->status =
                     ($attendance->checkin_time && $attendance->checkout_time)
                     ? 'Present'
-                    : 'Incomplete';
+                    : 'Absent';
 
                 return $attendance;
             });
