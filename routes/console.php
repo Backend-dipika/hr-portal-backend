@@ -10,23 +10,16 @@ Artisan::command('inspire', function () {
 
 
 
-Schedule::command('leave:process-yearly')
-    ->dailyAt('08:00'); 
+// Schedule::command('leave:process-yearly')
+//     ->dailyAt('08:00'); 
 
 Schedule::command('app:process-yearly-leaves')
-    ->everyMinute()
+    ->dailyAt('08:00')
     ->withoutOverlapping()
     ->onOneServer()
-    ->before(function () {
-        // 🧩 Debug logs (commented out now — enable if needed for troubleshooting)
-        /*
-        $logPath = storage_path('logs/yearly_leaves.log');
-        $debugInfo = "🔍 Running yearly-leave scheduler at " . now() . PHP_EOL .
-                     "Current working dir: " . getcwd() . PHP_EOL .
-                     "APP_ENV=" . env('APP_ENV') . PHP_EOL .
-                     "DB_CONNECTION=" . env('DB_CONNECTION') . PHP_EOL .
-                     str_repeat('-', 50) . PHP_EOL;
-        file_put_contents($logPath, $debugInfo, FILE_APPEND);
-        */
-    })
     ->appendOutputTo(storage_path('logs/yearly_leaves.log'));
+
+Schedule::command('app:process-comp-off-leaves')
+    ->dailyAt('09:00')
+    ->withoutOverlapping()
+    ->appendOutputTo(storage_path('logs/comp_off_leaves.log'));

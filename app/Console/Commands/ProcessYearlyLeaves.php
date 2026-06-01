@@ -31,10 +31,6 @@ class ProcessYearlyLeaves extends Command
     public function handle()
     {
         $today = Carbon::today();
-        // $today = Carbon::today()->addYear();
-
-
-        // Use the current year to denote the leave cycle that is starting
         $yearStarting = $today->year;
 
         // Use the previous year (the year of the last cycle's start) to denote the cycle that just closed
@@ -62,11 +58,9 @@ class ProcessYearlyLeaves extends Command
 
             // Step 2: Retrieve the LeaveBalance record for the year that JUST CLOSED
             $leaveBalance = LeaveBalance::where('user_id', $user->id)
-                // Assuming the previous LeaveBalance record exists and is tagged with the year it closed
                 ->where('year', $yearClosed)
-                 ->where('leave_type_id', 1)
+                ->where('leave_type_id', 1)
                 ->first();
-            // $this->comment('LeaveBalance: ' . print_r($leaveBalance ? $leaveBalance->toArray() : ['No record found'], true));
 
             // Check if a LeaveBalance record for the NEW cycle already exists
             $newLeaveBalanceExists = LeaveBalance::where('user_id', $user->id)
@@ -80,11 +74,7 @@ class ProcessYearlyLeaves extends Command
             }
 
             if (!$leaveBalance) {
-                // This will happen for the first anniversary if no balance was created after joining, 
-                // or if data is missing. We can still create the new year's balance.
                 $this->warn("User ID: {$user->id} has no LeaveBalance record for the closed year ({$yearClosed}). Allocating new year's leave.");
-
-                // Jump to creating the new year's balance
             } elseif ($leaveBalance->remaining_days > 0) {
 
                 // Step 3a: Create pending action record for the **CLOSED YEAR**
@@ -103,16 +93,6 @@ class ProcessYearlyLeaves extends Command
                 // Step 3b: Optionally zero out the old balance to prevent re-use
                 $leaveBalance->update(['remaining_days' => 0]);
 
-                // Step 4: Create the NEW LeaveBalance record for the **STARTING YEAR**
-                // LeaveBalance::create([
-                //     'user_id'            => $user->id,
-                //     'leave_type_id'      => 1, // Assuming '1' is the annual leave type
-                //     'year'               => $yearStarting, // <-- CORRECT: New balance for the starting year
-                //     'total_allocated'    => 21,
-                //     'used_days'          => 0,
-                //     'remaining_days'     => 21,
-                //     'carry_forward_days' => 0,
-                // ]);
                 $registrationController = new \App\Http\Controllers\user\RegistrationController();
                 $registrationController->addLeaveForNewUser($user->id);
 
@@ -121,25 +101,11 @@ class ProcessYearlyLeaves extends Command
                     throw new \Exception("User not found for ID {$user->id}");
                 }
                 $toUser->notify(new YearEndConfirmationNotification);
-                // $toUser->notify(new YearEndConfirmationNotification($messageData));
-
 
                 $this->info("Allocated 21 days for the **STARTING YEAR** ({$yearStarting}).");
             } else {
-                // Remaining days are 0 or less. Just create the new year's allocation.
-                // LeaveBalance::create([
-                //     'user_id'            => $user->id,
-                //     'leave_type_id'      => 1,
-                //     'year'               => $yearStarting, // <-- CORRECT: New balance for the starting year
-                //     'total_allocated'    => 21,
-                //     'used_days'          => 0,
-                //     'remaining_days'     => 21,
-                //     'carry_forward_days' => 0,
-                // ]);
-
                 $registrationController = new \App\Http\Controllers\user\RegistrationController();
                 $registrationController->addLeaveForNewUser($user->id);
-
 
                 $this->line("User: {$user->name} had 0 remaining days for {$yearClosed}. Allocated 21 days for {$yearStarting}.");
             }

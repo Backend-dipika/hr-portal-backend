@@ -508,9 +508,9 @@ class RegistrationController extends Controller
 
         foreach ($leaveTypes as $type) {
             // Skip the old half-day leave type
-            if ($type->id === 4) {
-                continue;
-            }
+            // if ($type->id === 4) {
+            //     continue;
+            // }
 
             // // Set default allocation per leave type
             // $total = match ($type->id) {

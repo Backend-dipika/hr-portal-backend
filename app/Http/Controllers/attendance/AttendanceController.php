@@ -9,6 +9,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class AttendanceController extends Controller
 {
@@ -148,7 +149,8 @@ class AttendanceController extends Controller
         try {
 
             // Logged in user
-            $user = auth()->user();
+            // $user = auth()->user();
+             $user = Auth::user();
 
             // Correct user id
             $userId = $user->office_id;

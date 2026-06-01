@@ -459,92 +459,96 @@ class LeaveRequestController extends Controller
      */
     public function approveLeave(Request $request, $id)
     {
-        $leaveRequest = LeaveRequest::findOrFail($id);
-        $approver = Auth::user();
+        try {
+            DB::beginTransaction();
+            $leaveRequest = LeaveRequest::findOrFail($id);
+            $approver = Auth::user();
 
-        // Prevent approving a leave already finalized
-        if (in_array($leaveRequest->status, ['approved', 'rejected'])) {
-            return response()->json(['message' => 'Leave already processed.'], 400);
-        }
+            // Prevent approving a leave already finalized
+            if (in_array($leaveRequest->status, ['approved', 'rejected'])) {
+                return response()->json(['message' => 'Leave already processed.'], 400);
+            }
 
-        // Check approver level
-        $approval = LeaveApproval::where('leave_request_id', $leaveRequest->id)
-            ->where('approver_id', $approver->id)
-            ->first();
+            // Check approver level
+            $approval = LeaveApproval::where('leave_request_id', $leaveRequest->id)
+                ->where('approver_id', $approver->id)
+                ->first();
 
-        if (!$approval) {
-            return response()->json(['message' => 'No approval record found for your level.'], 403);
-        }
+            if (!$approval) {
+                return response()->json(['message' => 'No approval record found for your level.'], 403);
+            }
 
-        if (in_array($approval->status, ['approved', 'rejected'])) {
-            return response()->json(['message' => 'You have already processed this request.'], 400);
-        }
+            if (in_array($approval->status, ['approved', 'rejected'])) {
+                return response()->json(['message' => 'You have already processed this request.'], 400);
+            }
 
-        // Approve current level
-        $approval->status = 'approved';
-        $approval->approved_on = now();
-        $approval->save();
+            // Approve current level
+            $approval->status = 'approved';
+            $approval->approved_on = now();
+            // $approval->save();
 
-        // Check if any approvals are still pending
-        $anyPending = LeaveApproval::where('leave_request_id', $leaveRequest->id)
-            ->where('status', 'pending')
-            ->exists();
+            // Check if any approvals are still pending
+            $anyPending = LeaveApproval::where('leave_request_id', $leaveRequest->id)
+                ->where('id', '!=', $approval->id)
+                ->where('status', 'pending')
+                ->exists();
 
-        if ($anyPending) {
+            if ($anyPending) {
+                $approval->save();
+                DB::commit();
+                return response()->json([
+                    'message' => 'Leave approved at your level. Awaiting other approvals.',
+                    // 'data' => $leaveRequest,
+                ]);
+            }
+
+            // Final approval → deduct leave balance
+            // $deductionLeaveTypeId = in_array($leaveRequest->duration_type, ['first_half', 'second_half'])
+            //     ? 1  // Always Paid Leave for half-days
+            //     : $leaveRequest->leave_type_id;
+            $deductionLeaveTypeId = $leaveRequest->leave_type_id;
+            $year = (int) Carbon::parse($leaveRequest->start_date)->format('Y');
+
+            $balance = LeaveBalance::where('user_id', $leaveRequest->user_id)
+                ->where('leave_type_id', $deductionLeaveTypeId)
+                ->where('year', $year)
+                ->first();
+
+            $daysToDeduct = (float) $leaveRequest->total_days_requested;
+
+            if (!$balance || $balance->remaining_days < $daysToDeduct) {
+                DB::rollBack();
+
+                return response()->json(['message' => 'Not enough leave balance.'], 400);
+            }
+
+            $approval->save();
+
+            $balance->used_days = round($balance->used_days + $daysToDeduct, 2);
+            $balance->remaining_days = round($balance->remaining_days - $daysToDeduct, 2);
+            $balance->save();
+
+
+            // Update leave request
+            $leaveRequest->status = 'approved';
+            $leaveRequest->total_days_approved = $daysToDeduct;
+            $leaveRequest->approved_on = now();
+            $leaveRequest->save();
+            DB::commit();
+            // Notify user
+            $leaveRequest->user->notify(new LeaveStatusNotification($leaveRequest, 'Approved'));
+
             return response()->json([
-                'message' => 'Leave approved at your level. Awaiting other approvals.',
-                // 'data' => $leaveRequest,
+                'message' => 'Leave approved successfully.',
             ]);
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            return response()->json([
+                'message' => $e->getMessage()
+            ], 500);
         }
-
-        // Final approval → deduct leave balance
-        $deductionLeaveTypeId = in_array($leaveRequest->duration_type, ['first_half', 'second_half'])
-            ? 1  // Always Paid Leave for half-days
-            : $leaveRequest->leave_type_id;
-
-        $year = (int) Carbon::parse($leaveRequest->start_date)->format('Y');
-
-        // $balance = LeaveBalance::firstOrCreate(
-        //     [
-        //         'user_id' => $leaveRequest->user_id,
-        //         'leave_type_id' => $deductionLeaveTypeId,
-        //         'year' => $year,
-        //     ],
-        //     [
-        //         'total_allocated' => 0,
-        //         'used_days' => 0,
-        //         'remaining_days' => 0,
-        //         'carry_forward_days' => 0
-        //     ]
-        // );
-        $balance = LeaveBalance::where('user_id', $leaveRequest->user_id)
-            ->where('leave_type_id', $deductionLeaveTypeId)
-            ->where('year', $year)
-            ->first();
-
-        $daysToDeduct = (float) $leaveRequest->total_days_requested;
-
-        if ($balance->remaining_days < $daysToDeduct) {
-            return response()->json(['message' => 'Not enough leave balance.'], 400);
-        }
-
-        $balance->used_days = round($balance->used_days + $daysToDeduct, 2);
-        $balance->remaining_days = round($balance->remaining_days - $daysToDeduct, 2);
-        $balance->save();
-
-
-        // Update leave request
-        $leaveRequest->status = 'approved';
-        $leaveRequest->total_days_approved = $daysToDeduct;
-        $leaveRequest->approved_on = now();
-        $leaveRequest->save();
-
-        // Notify user
-        $leaveRequest->user->notify(new LeaveStatusNotification($leaveRequest, 'Approved'));
-
-        return response()->json([
-            'message' => 'Leave approved successfully.',
-        ]);
     }
 
     /**
