@@ -17,10 +17,12 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             DepartmentSeeder::class,
             DesignationSeeder::class,
+            EmployeeSeeder::class,
             EmployeeTypeSeeder::class,
             UserSeeder::class,
             LeaveTypeSeeder::class,
             LeaveBalanceSeeder::class,
+
         ]);
         // User::factory(10)->create();
         // User::factory()->create([

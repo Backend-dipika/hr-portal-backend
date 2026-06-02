@@ -42,15 +42,6 @@ class LeaveTypeSeeder extends Seeder
                 'max_allowed_days' => 30,
                 'is_paid' => true,
             ],
-            [
-                'name' => 'Maternity',
-                'type' => 'maternity leave',
-                'code' => '',
-                'max_allowed_days' => 182,
-                'is_paid' => true,
-            ],
-
-
         ];
 
         foreach ($leaveTypes as $type) {

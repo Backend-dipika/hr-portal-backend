@@ -21,17 +21,17 @@ class LeaveBalanceSeeder extends Seeder
 
         foreach ($users as $user) {
             foreach ($leaveTypes as $type) {
-                // Skip the old half-day leave type (id = 4)
-                if ($type->id === 4) {
-                    continue;
-                }
+                // // Skip the old half-day leave type (id = 4)
+                // if ($type->id === 4) {
+                //     continue;
+                // }
 
                 // Set default allocation per leave type
                 $total = match ($type->id) {
                     1 => 21,    // Paid Leave
                     2 => 0,   // Unpaid Leave (treated as "infinite")
                     3 => 365,     // Comp-off
-                    5 => 182,   // Maternity Leave
+                    4 => 0,   // Halfday 
                     default => 0,
                 };
 
