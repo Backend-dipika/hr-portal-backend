@@ -178,7 +178,24 @@ class DashboardController extends Controller
      *   "data": {
      *     "total_employees": 50,
      *     "approved_leaves": 5,
-     *     "departments": 6
+     *     "departments": 6,
+     *      "weekly_attendances": [
+     *          {
+     *              "day": "Monday",
+     *              "attendance_count": 14
+     *          }
+     *      ],
+     *      "monthly_attendances": [
+     *          {
+     *              "week_number": "23",
+     *              "attendance_count": 57
+     *          },
+     *          {
+     *              "week_number": "24",
+     *              "attendance_count": 14
+     *          }
+     *      ],
+     *      "total_employees_count": 14
      *   }
      * }
      *
