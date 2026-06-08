@@ -197,26 +197,26 @@ class DashboardController extends Controller
                 ->whereDate('end_date', '>=', $today)
                 ->count();
             $departmentsCount = Department::count();
-            $totalEmployees = Employee::count()-1; // Exclude admin
+            $totalEmployees = Employee::count() - 1; // Exclude admin
             $weeklyData = ProcessedAttendance::select(
-                DB::raw('DAYNAME(attendance_date) as day'),
+                DB::raw("TO_CHAR(attendance_date, 'FMDay') as day"),
                 DB::raw('COUNT(*) as attendance_count')
             )
                 ->whereBetween('attendance_date', [
                     Carbon::now()->startOfWeek(),
                     Carbon::now()->endOfWeek()
                 ])
-                ->groupBy('day')
+                ->groupBy(DB::raw("TO_CHAR(attendance_date, 'FMDay')"))
                 ->orderByRaw('MIN(attendance_date)')
                 ->get();
 
             $monthlyData = ProcessedAttendance::select(
-                DB::raw('WEEK(attendance_date, 1) as week_number'),
+                DB::raw('EXTRACT(WEEK FROM attendance_date) as week_number'),
                 DB::raw('COUNT(*) as attendance_count')
             )
                 ->whereYear('attendance_date', Carbon::now()->year)
                 ->whereMonth('attendance_date', Carbon::now()->month)
-                ->groupBy('week_number')
+                ->groupBy(DB::raw('EXTRACT(WEEK FROM attendance_date)'))
                 ->orderBy('week_number')
                 ->get();
 
