@@ -157,43 +157,81 @@ class ProfileController extends Controller
             }
 
             // ✅ Handle Current Address
-            if ($request->hasAny(['current_address1', 'current_city', 'current_state', 'current_pincode'])) {
-                Log::info('🏠 [Profile Update] Updating/Creating current address');
+            // if ($request->hasAny(['current_address1', 'current_city', 'current_state', 'current_pincode'])) {
+            //     Log::info('🏠 [Profile Update] Updating/Creating current address');
+            //     $user->address()->updateOrCreate(
+            //         ['type' => 'current'],
+            //         [
+            //             'uuid'     => Str::uuid(),
+            //             'address1' => $request->input('current_address1'),
+            //             'address2' => $request->input('current_address2'),
+            //             'city'     => $request->input('current_city'),
+            //             'state'    => $request->input('current_state'),
+            //             'pincode'  => $request->input('current_pincode'),
+            //             'country'  => $request->input('current_country', 'India'),
+            //         ]
+            //     );     
+            //     Log::info('✅ [Profile Update] Current address updated/created successfully');
+            // } else {
+            //     Log::info('ℹ️ [Profile Update] No current address fields provided');
+            // }
+
+            // // ✅ Handle Permanent Address
+            // if ($request->hasAny(['permanent_address1', 'permanent_city', 'permanent_state', 'permanent_pin'])) {
+            //     Log::info('🏡 [Profile Update] Updating/Creating permanent address');
+            //     $user->address()->updateOrCreate(
+            //         ['type' => 'permanent'],
+            //         [
+            //             'uuid'     => Str::uuid(),
+            //             'address1' => $request->input('permanent_address1'),
+            //             'address2' => $request->input('permanent_address2'),
+            //             'city'     => $request->input('permanent_city'),
+            //             'state'    => $request->input('permanent_state'),
+            //             'pincode'  => $request->input('permanent_pincode'),
+            //             'country'  => $request->input('permanent_country', 'India'),
+            //         ]
+            //     );
+            //     Log::info('✅ [Profile Update] Permanent address updated/created successfully');
+            // } else {
+            //     Log::info('ℹ️ [Profile Update] No permanent address fields provided');
+            // }
+
+            // Current Address
+            $currentAddressData = array_filter([
+                'address1' => $request->input('current_address1'),
+                'address2' => $request->input('current_address2'),
+                'city'     => $request->input('current_city'),
+                'state'    => $request->input('current_state'),
+                'pincode'  => $request->input('current_pincode'),
+                'country'  => $request->input('current_country'),
+            ], fn($value) => !is_null($value));
+
+            if (!empty($currentAddressData)) {
+                $currentAddressData['uuid'] = Str::uuid();
+
                 $user->address()->updateOrCreate(
                     ['type' => 'current'],
-                    [
-                        'uuid'     => Str::uuid(),
-                        'address1' => $request->input('current_address1'),
-                        'address2' => $request->input('current_address2'),
-                        'city'     => $request->input('current_city'),
-                        'state'    => $request->input('current_state'),
-                        'pincode'  => $request->input('current_pincode'),
-                        'country'  => $request->input('current_country', 'India'),
-                    ]
+                    $currentAddressData
                 );
-                Log::info('✅ [Profile Update] Current address updated/created successfully');
-            } else {
-                Log::info('ℹ️ [Profile Update] No current address fields provided');
             }
 
-            // ✅ Handle Permanent Address
-            if ($request->hasAny(['permanent_address1', 'permanent_city', 'permanent_state', 'permanent_pin'])) {
-                Log::info('🏡 [Profile Update] Updating/Creating permanent address');
+            // Permanent Address
+            $permanentAddressData = array_filter([
+                'address1' => $request->input('permanent_address1'),
+                'address2' => $request->input('permanent_address2'),
+                'city'     => $request->input('permanent_city'),
+                'state'    => $request->input('permanent_state'),
+                'pincode'  => $request->input('permanent_pincode'),
+                'country'  => $request->input('permanent_country'),
+            ], fn($value) => !is_null($value));
+
+            if (!empty($permanentAddressData)) {
+                $permanentAddressData['uuid'] = Str::uuid();
+
                 $user->address()->updateOrCreate(
                     ['type' => 'permanent'],
-                    [
-                        'uuid'     => Str::uuid(),
-                        'address1' => $request->input('permanent_address1'),
-                        'address2' => $request->input('permanent_address2'),
-                        'city'     => $request->input('permanent_city'),
-                        'state'    => $request->input('permanent_state'),
-                        'pincode'  => $request->input('permanent_pincode'),
-                        'country'  => $request->input('permanent_country', 'India'),
-                    ]
+                    $permanentAddressData
                 );
-                Log::info('✅ [Profile Update] Permanent address updated/created successfully');
-            } else {
-                Log::info('ℹ️ [Profile Update] No permanent address fields provided');
             }
 
             DB::commit();

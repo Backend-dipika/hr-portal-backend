@@ -29,6 +29,7 @@ class EmployeeController extends Controller
      *       "first_name": "John",
      *       "last_name": "Doe",
      *       "office_email": "john.doe@company.com",
+     *       "profile_picture": "https://example.com/profile.jpg"??"",
      *       "office_id": "EMP001",
      *       "designation": "Backend Developer",
      *       "department": "IT",
