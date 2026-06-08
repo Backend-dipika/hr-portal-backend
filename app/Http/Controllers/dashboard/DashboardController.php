@@ -4,10 +4,13 @@ namespace App\Http\Controllers\dashboard;
 
 use App\Http\Controllers\Controller;
 use App\Models\Department;
+use App\Models\Employee;
 use App\Models\LeaveRequest;
+use App\Models\ProcessedAttendance;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -194,12 +197,38 @@ class DashboardController extends Controller
                 ->whereDate('end_date', '>=', $today)
                 ->count();
             $departmentsCount = Department::count();
+            $totalEmployees = Employee::count()-1; // Exclude admin
+            $weeklyData = ProcessedAttendance::select(
+                DB::raw('DAYNAME(attendance_date) as day'),
+                DB::raw('COUNT(*) as attendance_count')
+            )
+                ->whereBetween('attendance_date', [
+                    Carbon::now()->startOfWeek(),
+                    Carbon::now()->endOfWeek()
+                ])
+                ->groupBy('day')
+                ->orderByRaw('MIN(attendance_date)')
+                ->get();
+
+            $monthlyData = ProcessedAttendance::select(
+                DB::raw('WEEK(attendance_date, 1) as week_number'),
+                DB::raw('COUNT(*) as attendance_count')
+            )
+                ->whereYear('attendance_date', Carbon::now()->year)
+                ->whereMonth('attendance_date', Carbon::now()->month)
+                ->groupBy('week_number')
+                ->orderBy('week_number')
+                ->get();
+
             return response()->json([
                 'status' => 'success',
                 'data' => [
                     'total_employees' => $usersCount,
                     'approved_leaves' => $approvedLeavesCount,
-                    'departments' => $departmentsCount
+                    'departments' => $departmentsCount,
+                    'weekly_attendances' => $weeklyData,
+                    'monthly_attendances' => $monthlyData,
+                    'total_employees_count' => $totalEmployees
                 ]
             ], 200);
         } catch (\Exception $e) {
