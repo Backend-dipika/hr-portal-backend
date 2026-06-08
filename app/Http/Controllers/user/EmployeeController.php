@@ -58,6 +58,7 @@ class EmployeeController extends Controller
                     'first_name' => $user->first_name ?? '',
                     'last_name' => $user->last_name ?? '',
                     'office_email' => $user->office_email ?? '',
+                    'profile_picture' => $user->profile_picture ?? '',
                     'office_id' => $user->office_id ?? '',
                     'designation' => $user->designation?->name ?? '',
                     'department' => $user->department?->name ?? '',
