@@ -235,7 +235,7 @@ class DashboardController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'An error occurred fetching statistics',
-                // 'error' => $e->getMessage()
+                'error' => $e->getMessage()
             ], 500);
         }
     }
