@@ -84,15 +84,17 @@ class UserResource extends JsonResource
                     'name' => $this->employeeType?->name,
                 ];
             }),
-            
-            'reporting_manager' => $this->whenLoaded('reportingManager', function () {
-                return [
-                    'id' => $this->reportingManager?->id ,
-                    'name' => $this->reportingManager?->first_name . ' ' . $this->reportingManager?->last_name,
-                    'email' => $this->reportingManager?->office_email ? $this->reportingManager?->office_email : '',
-                ];
-            }),
 
+            'reporting_manager' => $this->reportingManager
+                ? [
+                    'id' => $this->reportingManager->id,
+                    'name' => trim(
+                        ($this->reportingManager->first_name ?? '') . ' ' .
+                            ($this->reportingManager->last_name ?? '')
+                    ),
+                    'email' => $this->reportingManager->office_email ?? '',
+                ]
+                : (object) [],
             // 'reporting_manager' => $this->when(
             //     $this->relationLoaded('reportingManager'),
             //     function () {
