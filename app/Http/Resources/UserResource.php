@@ -87,9 +87,9 @@ class UserResource extends JsonResource
             
             'reporting_manager' => $this->whenLoaded('reportingManager', function () {
                 return [
-                    'id' => $this->reportingManager?->id,
+                    'id' => $this->reportingManager?->id ,
                     'name' => $this->reportingManager?->first_name . ' ' . $this->reportingManager?->last_name,
-                    'email' => $this->reportingManager?->office_email,
+                    'email' => $this->reportingManager?->office_email ? $this->reportingManager?->office_email : '',
                 ];
             }),
 
