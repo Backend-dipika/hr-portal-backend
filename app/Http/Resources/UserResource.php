@@ -84,6 +84,14 @@ class UserResource extends JsonResource
                     'name' => $this->employeeType?->name,
                 ];
             }),
+            
+            'reporting_manager' => $this->whenLoaded('reportingManager', function () {
+                return [
+                    'id' => $this->reportingManager?->id,
+                    'name' => $this->reportingManager?->first_name . ' ' . $this->reportingManager?->last_name,
+                    'email' => $this->reportingManager?->office_email,
+                ];
+            }),
 
             // 'reporting_manager' => $this->when(
             //     $this->relationLoaded('reportingManager'),
@@ -95,21 +103,11 @@ class UserResource extends JsonResource
             //                     ($this->reportingManager->last_name ?? '')
             //             ),
             //             'email' => $this->reportingManager->office_email,
-            //         ] : [];
+            //         ] : "";
             //     },
-            //     [] // default if not loaded
+            //     "" // default if not loaded
             // ),
-            'reporting_manager' => $this->relationLoaded('reportingManager') && $this->reportingManager
-                ? [
-                    'id' => $this->reportingManager->id,
-                    'name' => trim(
-                        ($this->reportingManager->first_name ?? '') . ' ' .
-                            ($this->reportingManager->last_name ?? '')
-                    ),
-                    'email' => $this->reportingManager->office_email ?? '',
-                ]
-                : [],
-            
+
             'team_members' => $this->whenLoaded('teamMembers', function () {
                 return $this->teamMembers->map(function ($member) {
                     return [
