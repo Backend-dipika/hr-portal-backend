@@ -93,7 +93,7 @@ class UserSeeder extends Seeder
                 'role_id' => 3,
                 'department_id' => 2,
                 'designation_id' => 3,
-                'date_of_joining' => '2005-05-05',
+                'date_of_joining' => '2005-06-02',
                 'date_of_birth' => '1978-10-01',
                 'marital_status' => 'Married',
                 'about' => 'Sales Representative.',
